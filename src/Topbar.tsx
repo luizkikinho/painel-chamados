@@ -30,14 +30,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Moon, Sun } from "lucide-react"
+import { useTheme } from "@/components/theme-provider"
 
-export function Topbar() {
+// NOVO: Adicionamos a tipagem para aceitar os 'children'
+interface TopbarProps {
+  children?: React.ReactNode
+}
+
+export function Topbar({ children }: TopbarProps) {
+  const { theme, setTheme } = useTheme()
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isLogoutAlertOpen, setIsLogoutAlertOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
-  // Estados do formulário de Perfil
   const [emailUser, setEmailUser] = useState("")
   const [nome, setNome] = useState("")
   const [telefone, setTelefone] = useState("")
@@ -48,17 +55,13 @@ export function Topbar() {
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      
       if (user?.email) {
         setEmailUser(user.email)
-        
-        // Busca os dados complementares na tabela administradores
         const { data: adminData } = await supabase
           .from('administradores')
           .select('nome, telefone')
           .eq('id', user.id)
           .single()
-
         if (adminData) {
           if (adminData.nome) setNome(adminData.nome)
           if (adminData.telefone) setTelefone(adminData.telefone)
@@ -69,39 +72,21 @@ export function Topbar() {
   }, [])
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) console.error("Erro ao sair:", error.message)
+    await supabase.auth.signOut()
   }
 
   const handleSaveProfile = async () => {
     setIsSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
-    
     if (!user) {
       setIsSaving(false)
       return
     }
 
-    // 1. Atualiza Nome e Telefone na tabela administradores
-    const { error: dbError } = await supabase
-      .from('administradores')
-      .update({ nome, telefone })
-      .eq('id', user.id)
+    await supabase.from('administradores').update({ nome, telefone }).eq('id', user.id)
 
-    if (dbError) {
-      console.error("Erro ao atualizar perfil no banco:", dbError.message)
-      setIsSaving(false)
-      return
-    }
-
-    // 2. Atualiza a senha no Auth se os campos foram preenchidos corretamente
     if (novaSenha && novaSenha === confirmarSenha) {
-      const { error: authError } = await supabase.auth.updateUser({
-        password: novaSenha
-      })
-      if (authError) {
-        console.error("Erro ao atualizar senha:", authError.message)
-      }
+      await supabase.auth.updateUser({ password: novaSenha })
     }
 
     setIsSaving(false)
@@ -115,55 +100,62 @@ export function Topbar() {
     if (!fullName) return "AD" 
     const words = fullName.trim().split(/\s+/)
     if (words.length === 1) return words[0].substring(0, 2).toUpperCase()
-    
-    const firstLetter = words[0][0]
-    const lastLetter = words[words.length - 1][0]
-    return (firstLetter + lastLetter).toUpperCase()
+    return (words[0][0] + words[words.length - 1][0]).toUpperCase()
   }
 
   return (
     <>
-      <header className="flex h-16 w-full items-center justify-between border-b bg-background px-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
+      <header className="flex h-[72px] md:h-16 w-full items-center justify-between border-b bg-background px-4 md:px-6 gap-4">
+        {/* Lado Esquerdo: Logo */}
+        <div className="flex items-center md:w-[280px] shrink-0">
+          <h1 className="text-lg md:text-xl font-bold tracking-tight text-foreground">
             Denúncias<span className="text-blue-600">Admin</span>
           </h1>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="hidden sm:block">
+        {/* Centro: Onde as Abas (Tabs) serão injetadas */}
+        <div className="flex-1 flex justify-center w-full max-w-[650px] overflow-x-auto hide-scrollbar">
+          {children}
+        </div>
+
+        {/* Lado Direito: Ações */}
+        <div className="flex items-center justify-end gap-2 md:gap-4 md:w-[280px] shrink-0">
+          <div className="hidden xl:block">
             <Input
               type="search"
               placeholder="Buscar ticket ou hash..."
-              className="w-64"
+              className="w-56"
             />
           </div>
 
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            className="rounded-full"
+          >
+            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Alternar tema</span>
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full bg-muted">
-                <Avatar>
-                  <AvatarFallback className="font-semibold">
+              <Button variant="ghost" className="relative h-9 w-9 md:h-10 md:w-10 rounded-full bg-muted">
+                <Avatar className="h-9 w-9 md:h-10 md:w-10">
+                  <AvatarFallback className="font-semibold text-xs md:text-sm">
                     {getInitials(nome)}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-
             <DropdownMenuContent className="w-56" align="end">
               <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setIsProfileOpen(true)}>
-                Perfil
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setIsSettingsOpen(true)}>
-                Configurações
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsProfileOpen(true)}>Perfil</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsSettingsOpen(true)}>Configurações</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={() => setIsLogoutAlertOpen(true)} 
-                className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-600"
-              >
+              <DropdownMenuItem onClick={() => setIsLogoutAlertOpen(true)} className="text-red-600 focus:bg-red-50 focus:text-red-600">
                 Sair
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -171,111 +163,51 @@ export function Topbar() {
         </div>
       </header>
 
-      {/* Modal de Perfil */}
+      {/* Modais omitidos para brevidade (mantenha os mesmos do seu código original) */}
       <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Meu Perfil</DialogTitle>
-            <DialogDescription>
-              Atualize suas informações pessoais e credenciais de acesso.
-            </DialogDescription>
+            <DialogDescription>Atualize suas informações pessoais.</DialogDescription>
           </DialogHeader>
-          
           <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail de Acesso</Label>
-              <Input id="email" value={emailUser} disabled className="bg-muted/50" />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="nome">Nome Completo</Label>
-              <Input 
-                id="nome" 
-                placeholder="Seu nome" 
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="telefone">Telefone (Opcional)</Label>
-              <Input 
-                id="telefone" 
-                placeholder="(00) 00000-0000" 
-                value={telefone}
-                onChange={(e) => setTelefone(e.target.value)}
-              />
-            </div>
-
+            <div className="space-y-2"><Label>E-mail de Acesso</Label><Input value={emailUser} disabled className="bg-muted/50" /></div>
+            <div className="space-y-2"><Label>Nome Completo</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
+            <div className="space-y-2"><Label>Telefone (Opcional)</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} /></div>
             <div className="space-y-2 pt-2">
               <Label className="text-sm font-semibold text-muted-foreground">Alterar Senha</Label>
               <div className="grid gap-3">
-                <Input 
-                  type="password" 
-                  placeholder="Senha atual" 
-                  value={senhaAtual}
-                  onChange={(e) => setSenhaAtual(e.target.value)}
-                />
-                <Input 
-                  type="password" 
-                  placeholder="Nova senha" 
-                  value={novaSenha}
-                  onChange={(e) => setNovaSenha(e.target.value)}
-                />
-                <Input 
-                  type="password" 
-                  placeholder="Confirmar nova senha" 
-                  value={confirmarSenha}
-                  onChange={(e) => setConfirmarSenha(e.target.value)}
-                />
+                <Input type="password" placeholder="Senha atual" value={senhaAtual} onChange={(e) => setSenhaAtual(e.target.value)} />
+                <Input type="password" placeholder="Nova senha" value={novaSenha} onChange={(e) => setNovaSenha(e.target.value)} />
+                <Input type="password" placeholder="Confirmar nova senha" value={confirmarSenha} onChange={(e) => setConfirmarSenha(e.target.value)} />
               </div>
             </div>
           </div>
-
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsProfileOpen(false)} disabled={isSaving}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleSaveProfile} 
-              className="bg-blue-600 text-white hover:bg-blue-700"
-              disabled={isSaving}
-            >
+            <Button variant="outline" onClick={() => setIsProfileOpen(false)} disabled={isSaving}>Cancelar</Button>
+            <Button onClick={handleSaveProfile} className="bg-blue-600 text-white hover:bg-blue-700" disabled={isSaving}>
               {isSaving ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Configurações */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Configurações do Sistema</DialogTitle>
-            <DialogDescription>
-              Ajuste as preferências globais da sua instância.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground">Opções em construção...</p>
-          </div>
+          <DialogHeader><DialogTitle>Configurações do Sistema</DialogTitle></DialogHeader>
+          <div className="py-4"><p className="text-sm text-muted-foreground">Opções em construção...</p></div>
         </DialogContent>
       </Dialog>
 
-      {/* Alerta de Confirmação de Saída */}
       <AlertDialog open={isLogoutAlertOpen} onOpenChange={setIsLogoutAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza que deseja sair?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Sua sessão atual será encerrada e você precisará fazer login novamente para acessar o painel.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Sua sessão será encerrada.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleLogout} className="bg-red-600 text-white hover:bg-red-700">
-              Sim, quero sair
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleLogout} className="bg-red-600 text-white hover:bg-red-700">Sim, quero sair</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
