@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import type { Session, User } from "@supabase/supabase-js"
-import Dashboard from "./Dashboard"
-import Login from "./Login"
-import UpdatePassword from "./Alterar-Senha"
 import { Routes, Route, Navigate } from "react-router"
+
+import Login from "../Login"
+import ChamadosTodos from "./chamados/index"
+import ChamadosMeus from "./chamados/meus"
+import ChamadosAbertos from "./chamados/abertos"
+import ChamadosFinalizados from "./chamados/finalizados"
+import Dashboard from "./Dashboard"
+import UpdatePassword from "./Alterar-Senha"
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -88,17 +93,10 @@ function App() {
           element={<div>Página Inicial de Visão Geral (Em breve)</div>}
         />
 
-        {/* A tela que construímos agora com os Cards entra aqui */}
-        <Route
-          path="chamados"
-          element={<div>Sua Tela de Listagem de Chamados Aqui</div>}
-        />
-        <Route path="chamados/meus" element={<div>Meus Chamados</div>} />
-        <Route path="chamados/abertos" element={<div>Chamados Abertos</div>} />
-        <Route
-          path="chamados/finalizados"
-          element={<div>Chamados Finalizados</div>}
-        />
+        <Route path="chamados" element={<ChamadosTodos />} />
+        <Route path="chamados/meus" element={<ChamadosMeus />} />
+        <Route path="chamados/abertos" element={<ChamadosAbertos />} />
+        <Route path="chamados/finalizados" element={<ChamadosFinalizados />} />
 
         <Route path="faq" element={<div>FAQ</div>} />
 

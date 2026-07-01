@@ -1,0 +1,117 @@
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase"
+
+import { ChamadoCard } from "@/components/chamado-card"
+
+interface ChamadoFormatado {
+  id: string
+  protocol: string
+  horasAberto: number
+  texto: string
+  status: string
+  isOwner: boolean
+}
+
+export default function Chamados() {
+  const [chamados, setChamados] = useState<ChamadoFormatado[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchChamados = async () => {
+    const { data: authData, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !authData.user) {
+      console.error("Usuário não encontrado")
+      setLoading(false)
+      return
+    }
+
+    const { data, error } = await supabase
+      .from("chamados_painel")
+      .select("*")
+      .eq("agente_responsavel_id", authData.user.id)
+      .neq("status", "concluido")
+      .order("data", { ascending: true })
+
+    if (error) {
+      console.error("Erro ao buscar chamados:", error)
+    } else {
+      const chamadosSLA =
+        data?.map((chamado) => {
+          const msAberto =
+            new Date().getTime() - new Date(chamado.data).getTime()
+          const horas = Math.floor(msAberto / (1000 * 60 * 60))
+
+          return {
+            id: chamado.id,
+            protocol: chamado.protocol,
+            texto: chamado.texto,
+            horasAberto: horas > 0 ? horas : 0,
+            status: chamado.status,
+            isOwner: chamado.agente_responsavel_id === authData.user?.id,
+          }
+        }) || []
+
+      setChamados(chamadosSLA)
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchChamados()
+  }, [])
+
+  const handleAtender = async (id: string) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return console.error("Usuário não autenticado")
+
+    const { error } = await supabase
+      .from("chamados")
+      .update({ agente_responsavel_id: user.id, status: "em_andamento" })
+      .eq("id", id)
+
+    if (error) {
+      console.error("Erro ao assumir chamado:", error)
+    } else {
+      setLoading(true)
+      fetchChamados()
+    }
+  }
+
+  return (
+    <div className="flex flex-1 flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Meus Chamados</h1>
+        <p className="text-muted-foreground">
+          Listagem de tickets atribuidos a mim.
+        </p>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Carregando chamados...</p>
+      ) : chamados.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Nenhum chamado pendente no momento.
+        </p>
+      ) : (
+        <div className="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {chamados.map((chamado) => (
+            <ChamadoCard
+              key={chamado.id}
+              id={chamado.protocol || chamado.id.substring(0, 8)} // Exibindo o protocolo ou um pedaço do UUID
+              horasAberto={chamado.horasAberto}
+              texto={chamado.texto}
+              status={chamado.status}
+              isOwner={chamado.isOwner}
+              onAtender={() => handleAtender(chamado.id)}
+              onResponder={() =>
+                console.log("Abrir dialog do chamado", chamado.id)
+              }
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
