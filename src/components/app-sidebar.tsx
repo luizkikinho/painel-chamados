@@ -31,23 +31,24 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "#",
+      url: "/",
       icon: <HomeIcon />,
     },
     {
       title: "Chamados",
-      url: "#",
+      url: "",
       icon: <Ticket />,
       isActive: true,
       items: [
-        { title: "Meus Chamados", url: "#" },
-        { title: "Em Aberto", url: "#" },
-        { title: "Finalizados", url: "#" },
+        { title: "Todos os Chamados", url: "/chamados" },
+        { title: "Meus Chamados", url: "/chamados/meus" },
+        { title: "Em Aberto", url: "/chamados/abertos" },
+        { title: "Finalizados", url: "/chamados/finalizados" },
       ],
     },
     {
       title: "FAQ",
-      url: "#",
+      url: "/faq",
       icon: <CircleQuestionMarkIcon />,
     },
   ],
@@ -55,7 +56,7 @@ const data = {
   navSecondary: [
     {
       title: "Configurações",
-      url: "#",
+      url: "/config",
       icon: <Settings2 />,
     },
   ],
@@ -63,17 +64,21 @@ const data = {
   adminMenu: [
     {
       name: "Usuários",
-      url: "#",
+      url: "",
       icon: <UsersIcon />,
+      items: [
+        { name: "Lista de Usuários", url: "/admin/usuarios" },
+        { name: "Novo Usuário", url: "/admin/usuarios/novo" },
+      ],
     },
     {
       name: "WhatsApp Bot",
-      url: "#",
+      url: "/admin/whatsapp",
       icon: <MessageSquareIcon />,
     },
     {
       name: "Empresa",
-      url: "#",
+      url: "/admin/empresa",
       icon: <BuildingIcon />,
     },
   ],
