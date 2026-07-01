@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useNavigate } from "react-router"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -45,12 +46,23 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const navigate = useNavigate() // Hook de navegação instanciado
 
-  // Estados para controlar o dialog e o loading visual
   const [openDialog, setOpenDialog] = React.useState(false)
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
 
-  // Função para deslogar atualizada com delay
+  // Função para pegar as iniciais do nome
+  const getInitials = (name: string) => {
+    if (!name) return "US"
+    const parts = name.trim().split(" ")
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+    }
+    return name.substring(0, 2).toUpperCase()
+  }
+
+  const userInitials = getInitials(user.name)
+
   const handleLogout = async () => {
     setIsLoggingOut(true)
 
@@ -59,9 +71,8 @@ export function NavUser({
       if (error) {
         console.error("Erro ao sair:", error.message)
         setIsLoggingOut(false)
-        setOpenDialog(false) // Fecha o dialog se der erro
+        setOpenDialog(false)
       }
-      // Se der sucesso, o App.tsx vai automaticamente desmontar esse componente e ir pra tela de login
     }, 1500)
   }
 
@@ -77,7 +88,10 @@ export function NavUser({
               >
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  {/* Iniciais aplicadas aqui */}
+                  <AvatarFallback className="rounded-lg">
+                    {userInitials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
@@ -96,7 +110,10 @@ export function NavUser({
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                    {/* Iniciais aplicadas aqui também */}
+                    <AvatarFallback className="rounded-lg">
+                      {userInitials}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
@@ -105,16 +122,26 @@ export function NavUser({
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+
               <DropdownMenuGroup>
-                <DropdownMenuItem>
+                {/* Eventos de onClick adicionados com as respectivas rotas */}
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => navigate("/conta")}
+                >
                   <UserCircle2Icon />
                   Conta
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => navigate("/notificacoes")}
+                >
                   <BellIcon />
                   Notificações
                 </DropdownMenuItem>
               </DropdownMenuGroup>
+
               <DropdownMenuSeparator />
 
               <DropdownMenuItem

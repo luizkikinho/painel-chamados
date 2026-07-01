@@ -122,6 +122,9 @@ function App() {
         />
 
         <Route path="config" element={<div>Configurações Geral</div>} />
+
+        <Route path="conta" element={<div>Configurações da Conta</div>} />
+        <Route path="notificacoes" element={<div>Notificações</div>} />
       </Route>
 
       {/* Rota de segurança: Se o usuário digitar uma URL que não existe, manda de volta pro painel */}
