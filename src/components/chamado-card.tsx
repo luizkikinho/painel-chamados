@@ -7,7 +7,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card"
-import { TicketIcon } from "lucide-react"
+import { TicketIcon, CornerDownRight } from "lucide-react"
 
 interface ChamadoCardProps {
   id: string
@@ -15,7 +15,8 @@ interface ChamadoCardProps {
   texto: string
   status: string
   isOwner: boolean
-  onAtender?: (id: string) => void // Modificado para opcional
+  resposta?: string // Adicionado
+  onAtender?: (id: string) => void
   onResponder: (id: string) => void
 }
 
@@ -25,6 +26,7 @@ export function ChamadoCard({
   texto,
   status,
   isOwner,
+  resposta,
   onAtender,
   onResponder,
 }: ChamadoCardProps) {
@@ -49,19 +51,41 @@ export function ChamadoCard({
   return (
     <Card className="flex flex-col transition-colors hover:bg-muted/50">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <Badge variant={variant} className={corClasses}>
-          {urgenciaTexto} Urgência
+        <Badge
+          variant={status === "concluido" ? "outline" : variant}
+          className={
+            status === "concluido"
+              ? "bg-muted text-muted-foreground"
+              : corClasses
+          }
+        >
+          {status === "concluido" ? "Concluído" : `${urgenciaTexto} Urgência`}
         </Badge>
 
-        <span className="text-xs text-muted-foreground">
-          {horasAberto}h atrás
-        </span>
+        {status !== "concluido" && (
+          <span className="text-xs text-muted-foreground">
+            {horasAberto}h atrás
+          </span>
+        )}
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="flex flex-1 flex-col gap-3">
         <CardTitle className="line-clamp-2 text-base leading-snug">
           {texto}
         </CardTitle>
+
+        {/* Exibição da resposta caso exista */}
+        {status === "concluido" && resposta && (
+          <div className="mt-2 flex gap-2 rounded-sm bg-muted/70 p-2.5 text-xs text-muted-foreground">
+            <CornerDownRight className="mt-0.5 size-3.5 shrink-0 text-primary" />
+            <div className="flex flex-col gap-1">
+              <span className="font-semibold text-foreground">
+                Sua resposta:
+              </span>
+              <p className="line-clamp-3">{resposta}</p>
+            </div>
+          </div>
+        )}
       </CardContent>
 
       <CardFooter className="flex items-center justify-between pt-4">
@@ -69,7 +93,6 @@ export function ChamadoCard({
           <TicketIcon className="size-4" />#{id}
         </div>
 
-        {/* Adicionado a verificação do onAtender */}
         {status === "aberto" && onAtender && (
           <Button
             size="sm"

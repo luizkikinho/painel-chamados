@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
 
 import { ChamadoCard } from "@/components/chamado-card"
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface ChamadoFormatado {
   id: string
@@ -28,13 +29,25 @@ interface ChamadoFormatado {
   texto: string
   status: string
   isOwner: boolean
+  resposta?: string
+}
+
+// Interface criada para tipar o retorno do banco e evitar o 'any'
+interface ChamadoConcluidoDB {
+  id: string
+  protocol: string
+  texto: string
+  data: string
+  status: string
+  agente_responsavel_id: string
+  registro_chamados: { texto: string; tipo_acao: string }[]
 }
 
 export default function Chamados() {
   const [chamados, setChamados] = useState<ChamadoFormatado[]>([])
   const [loading, setLoading] = useState(true)
+  const [abaAtiva, setAbaAtiva] = useState<"ativos" | "concluidos">("ativos")
 
-  // Estados para o fluxo de resposta
   const [chamadoSelecionado, setChamadoSelecionado] =
     useState<ChamadoFormatado | null>(null)
   const [textoResposta, setTextoResposta] = useState("")
@@ -42,7 +55,8 @@ export default function Chamados() {
   const [isAlertOpen, setIsAlertOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const fetchChamados = async () => {
+  const fetchChamados = useCallback(async () => {
+    setLoading(true)
     const { data: authData, error: authError } = await supabase.auth.getUser()
 
     if (authError || !authData.user) {
@@ -51,40 +65,78 @@ export default function Chamados() {
       return
     }
 
-    const { data, error } = await supabase
-      .from("chamados_painel")
-      .select("*")
-      .eq("agente_responsavel_id", authData.user.id)
-      .neq("status", "concluido")
-      .order("data", { ascending: true })
+    if (abaAtiva === "ativos") {
+      const { data, error } = await supabase
+        .from("chamados_painel")
+        .select("*")
+        .eq("agente_responsavel_id", authData.user.id)
+        .neq("status", "concluido")
+        .order("data", { ascending: true })
 
-    if (error) {
-      console.error("Erro ao buscar chamados:", error)
+      if (error) {
+        console.error("Erro ao buscar chamados ativos:", error)
+      } else {
+        const chamadosSLA =
+          data?.map((chamado) => {
+            const msAberto =
+              new Date().getTime() - new Date(chamado.data).getTime()
+            const horas = Math.floor(msAberto / (1000 * 60 * 60))
+
+            return {
+              id: chamado.id,
+              protocol: chamado.protocol,
+              texto: chamado.texto,
+              horasAberto: horas > 0 ? horas : 0,
+              status: chamado.status,
+              isOwner: true,
+            }
+          }) || []
+        setChamados(chamadosSLA)
+      }
     } else {
-      const chamadosSLA =
-        data?.map((chamado) => {
-          const msAberto =
-            new Date().getTime() - new Date(chamado.data).getTime()
-          const horas = Math.floor(msAberto / (1000 * 60 * 60))
+      // Busca os concluídos trazendo o texto da tabela de registros via inner join estruturado
+      const { data, error } = await supabase
+        .from("chamados")
+        .select(
+          `
+          id, protocol, texto, data, status, agente_responsavel_id,
+          registro_chamados!inner(texto, tipo_acao)
+        `
+        )
+        .eq("agente_responsavel_id", authData.user.id)
+        .eq("status", "concluido")
+        .eq("registro_chamados.tipo_acao", "RESPOSTA_CONCLUSAO")
+        .order("data", { ascending: false })
 
-          return {
-            id: chamado.id,
-            protocol: chamado.protocol,
-            texto: chamado.texto,
-            horasAberto: horas > 0 ? horas : 0,
-            status: chamado.status,
-            isOwner: true, // Já vem filtrado pelo seu ID
-          }
-        }) || []
+      if (error) {
+        console.error("Erro ao buscar chamados concluídos:", error)
+      } else {
+        // Removido o 'any' e tipado utilizando a interface ChamadoConcluidoDB
+        const concluidosFormatados =
+          (data as unknown as ChamadoConcluidoDB[])?.map((chamado) => {
+            const msAberto =
+              new Date().getTime() - new Date(chamado.data).getTime()
+            const horas = Math.floor(msAberto / (1000 * 60 * 60))
 
-      setChamados(chamadosSLA)
+            return {
+              id: chamado.id,
+              protocol: chamado.protocol,
+              texto: chamado.texto,
+              horasAberto: horas > 0 ? horas : 0,
+              status: chamado.status,
+              isOwner: true,
+              resposta: chamado.registro_chamados?.[0]?.texto || "",
+            }
+          }) || []
+        setChamados(concluidosFormatados)
+      }
     }
     setLoading(false)
-  }
+  }, [abaAtiva])
 
   useEffect(() => {
     fetchChamados()
-  }, [])
+  }, [fetchChamados])
 
   const handleAbrirDialog = (chamado: ChamadoFormatado) => {
     setChamadoSelecionado(chamado)
@@ -104,13 +156,12 @@ export default function Chamados() {
       return
     }
 
-    // 1. Insere a resposta no registro_chamados
     const { error: registroError } = await supabase
       .from("registro_chamados")
       .insert({
         id_chamado: chamadoSelecionado.id,
         texto: textoResposta,
-        tipo_acao: "resposta",
+        tipo_acao: "RESPOSTA_CONCLUSAO",
         usuario_chamado: authData.user.id,
       })
 
@@ -120,7 +171,6 @@ export default function Chamados() {
       return
     }
 
-    // 2. Atualiza o status do chamado principal para concluído
     const { error: updateError } = await supabase
       .from("chamados")
       .update({ status: "concluido" })
@@ -132,29 +182,41 @@ export default function Chamados() {
       return
     }
 
-    // Limpa os estados e recarrega a lista
     setIsSubmitting(false)
     setIsAlertOpen(false)
     setIsDialogOpen(false)
     setChamadoSelecionado(null)
-    setLoading(true)
     fetchChamados()
   }
 
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Meus Chamados</h1>
-        <p className="text-muted-foreground">
-          Listagem de tickets atribuídos a mim.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Meus Chamados</h1>
+          <p className="text-muted-foreground">
+            Gerencie e filtre os tickets atribuídos ao seu usuário.
+          </p>
+        </div>
+
+        {/* Removido o 'any' e definido os tipos literais estritos */}
+        <Tabs
+          value={abaAtiva}
+          onValueChange={(v) => setAbaAtiva(v as "ativos" | "concluidos")}
+          className="w-full sm:w-auto"
+        >
+          <TabsList className="grid w-full grid-cols-2 sm:w-[300px]">
+            <TabsTrigger value="ativos">Em andamento</TabsTrigger>
+            <TabsTrigger value="concluidos">Concluídos</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Carregando chamados...</p>
       ) : chamados.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Nenhum chamado pendente no momento.
+          Nenhum chamado encontrado nesta aba.
         </p>
       ) : (
         <div className="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -166,6 +228,7 @@ export default function Chamados() {
               texto={chamado.texto}
               status={chamado.status}
               isOwner={chamado.isOwner}
+              resposta={chamado.resposta}
               onResponder={() => handleAbrirDialog(chamado)}
             />
           ))}
