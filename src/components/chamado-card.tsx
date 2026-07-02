@@ -15,7 +15,7 @@ interface ChamadoCardProps {
   texto: string
   status: string
   isOwner: boolean
-  onAtender: (id: string) => void
+  onAtender?: (id: string) => void // Modificado para opcional
   onResponder: (id: string) => void
 }
 
@@ -69,8 +69,8 @@ export function ChamadoCard({
           <TicketIcon className="size-4" />#{id}
         </div>
 
-        {/* Renderização condicional dos botões */}
-        {status === "aberto" && (
+        {/* Adicionado a verificação do onAtender */}
+        {status === "aberto" && onAtender && (
           <Button
             size="sm"
             className="font-semibold"
