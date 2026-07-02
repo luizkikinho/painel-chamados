@@ -1,6 +1,7 @@
 import { Lock } from "lucide-react"
 
 import { LoginForm } from "@/components/login-form"
+import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 
 export default function LoginPage() {
@@ -10,16 +11,35 @@ export default function LoginPage() {
     const email = formData.get("email") as string
     const password = formData.get("password") as string
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const attemptLogin = async () => {
+      const { data, error: authError } = await supabase.auth.signInWithPassword(
+        {
+          email,
+          password,
+        }
+      )
 
-    if (authError) {
-      console.error("Erro no login:", authError.message)
+      if (authError) {
+        throw authError
+      }
+
+      return data
     }
-  }
 
+    toast.promise(attemptLogin(), {
+      loading: "Verificando credenciais...",
+      success: "Login realizado com sucesso!",
+      error: (err) => {
+        if (err.message.includes("Invalid login credentials")) {
+          return "E-mail ou senha incorretos."
+        }
+        if (err.message.includes("Too many requests")) {
+          return "Muitas tentativas. Tente novamente mais tarde."
+        }
+        return "Erro interno ao tentar fazer login."
+      },
+    })
+  }
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">

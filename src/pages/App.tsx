@@ -3,13 +3,14 @@ import { supabase } from "@/lib/supabase"
 import type { Session, User } from "@supabase/supabase-js"
 import { Routes, Route, Navigate } from "react-router"
 
-import Login from "../Login"
+import Login from "./Login"
 import ChamadosTodos from "./chamados/index"
 import ChamadosMeus from "./chamados/meus"
 import ChamadosAbertos from "./chamados/abertos"
 import ChamadosFinalizados from "./chamados/finalizados"
 import Dashboard from "./Dashboard"
 import UpdatePassword from "./Alterar-Senha"
+import { Toaster } from "sonner"
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -78,56 +79,68 @@ function App() {
     return <UpdatePassword onComplete={() => setIsRecoveringPassword(false)} />
   }
 
-  if (!session) {
-    return <Login />
-  }
-
   return (
-    <Routes>
-      {/* O Dashboard agora é a Rota Pai (Layout). Ele envolve tudo. */}
-      <Route path="/" element={<Dashboard userProfile={userProfile} />}>
-        {/* Telas que vão ser renderizadas DENTRO do <Outlet /> do Dashboard */}
-        {/* "index" é a página inicial padrão quando loga (ex: os gráficos de visão geral) */}
+    <>
+      <Routes>
+        {/* ROTA PÚBLICA */}
+        {/* Se não tiver logado, mostra o Login. Se já estiver logado, joga para o painel principal */}
         <Route
-          index
-          element={<div>Página Inicial de Visão Geral (Em breve)</div>}
+          path="/login"
+          element={!session ? <Login /> : <Navigate to="/" replace />}
         />
 
-        <Route path="chamados" element={<ChamadosTodos />} />
-        <Route path="chamados/meus" element={<ChamadosMeus />} />
-        <Route path="chamados/abertos" element={<ChamadosAbertos />} />
-        <Route path="chamados/finalizados" element={<ChamadosFinalizados />} />
+        {/* ROTAS PROTEGIDAS */}
+        {/* Só monta o Dashboard e as rotas filhas se existir uma sessão válida */}
+        {session && (
+          <Route path="/" element={<Dashboard userProfile={userProfile} />}>
+            <Route
+              index
+              element={<div>Página Inicial de Visão Geral (Em breve)</div>}
+            />
 
-        <Route path="faq" element={<div>FAQ</div>} />
+            <Route path="chamados" element={<ChamadosTodos />} />
+            <Route path="chamados/meus" element={<ChamadosMeus />} />
+            <Route path="chamados/abertos" element={<ChamadosAbertos />} />
+            <Route
+              path="chamados/finalizados"
+              element={<ChamadosFinalizados />}
+            />
 
+            <Route path="faq" element={<div>FAQ</div>} />
+
+            <Route
+              path="admin/usuarios"
+              element={<div>Tela de Usuários (Acesso Master)</div>}
+            />
+            <Route
+              path="admin/usuarios/novo"
+              element={<div>Novo Usuário (Acesso Master)</div>}
+            />
+            <Route
+              path="admin/whatsapp"
+              element={<div>Gerenciar Bot Whatsapp (Acesso Master)</div>}
+            />
+            <Route
+              path="admin/empresa"
+              element={<div>Gerenciar Dados Empresa (Acesso Master)</div>}
+            />
+
+            <Route path="config" element={<div>Configurações Geral</div>} />
+            <Route path="conta" element={<div>Configurações da Conta</div>} />
+            <Route path="notificacoes" element={<div>Notificações</div>} />
+          </Route>
+        )}
+
+        {/* ROTA FALLBACK (CATCH-ALL) */}
+        {/* Se tentar acessar algo não mapeado ou tentar burlar o acesso, redireciona */}
         <Route
-          path="admin/usuarios"
-          element={<div>Tela de Usuários (Acesso Master)</div>}
+          path="*"
+          element={<Navigate to={session ? "/" : "/login"} replace />}
         />
-        <Route
-          path="admin/usuarios/novo"
-          element={<div>Novo Usuário (Acesso Master)</div>}
-        />
+      </Routes>
 
-        <Route
-          path="admin/whatsapp"
-          element={<div>Gerenciar Bot Whatsapp (Acesso Master)</div>}
-        />
-
-        <Route
-          path="admin/empresa"
-          element={<div>Gerenciar Dados Empresa (Acesso Master)</div>}
-        />
-
-        <Route path="config" element={<div>Configurações Geral</div>} />
-
-        <Route path="conta" element={<div>Configurações da Conta</div>} />
-        <Route path="notificacoes" element={<div>Notificações</div>} />
-      </Route>
-
-      {/* Rota de segurança: Se o usuário digitar uma URL que não existe, manda de volta pro painel */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      <Toaster />
+    </>
   )
 }
 
