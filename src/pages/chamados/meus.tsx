@@ -22,6 +22,15 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
+import { useMediaQuery } from "usehooks-ts"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer"
+import { cn } from "@/lib/utils"
 
 interface ChamadoFormatado {
   id: string
@@ -44,6 +53,51 @@ interface ChamadoConcluidoDB {
   registro_chamados: { texto: string; tipo_acao: string }[]
 }
 
+function RespostaForm({
+  chamado,
+  textoResposta,
+  setTextoResposta,
+  isSubmitting,
+  onConfirm,
+  onCancel,
+  className,
+}: {
+  chamado: ChamadoFormatado | null
+  textoResposta: string
+  setTextoResposta: (t: string) => void
+  isSubmitting: boolean
+  onConfirm: () => void
+  onCancel: () => void
+  className?: string
+}) {
+  return (
+    <div className={cn("flex flex-col gap-4", className)}>
+      <div className="rounded-md bg-muted p-4 text-sm text-muted-foreground">
+        {chamado?.texto}
+      </div>
+
+      <Textarea
+        placeholder="Digite a resposta do chamado..."
+        className="min-h-[150px]"
+        value={textoResposta}
+        onChange={(e) => setTextoResposta(e.target.value)}
+      />
+
+      <div className="flex justify-end gap-2 pt-2">
+        <Button variant="outline" onClick={onCancel}>
+          Cancelar
+        </Button>
+        <Button
+          disabled={!textoResposta.trim() || isSubmitting}
+          onClick={onConfirm}
+        >
+          Responder
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export default function Chamados() {
   const [chamados, setChamados] = useState<ChamadoFormatado[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,6 +109,7 @@ export default function Chamados() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isAlertOpen, setIsAlertOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const isDesktop = useMediaQuery("(min-width: 768px)")
 
   const fetchChamados = useCallback(async () => {
     setLoading(true)
@@ -249,40 +304,48 @@ export default function Chamados() {
       )}
 
       {/* Dialog Principal de Resposta */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>
-              Responder Chamado {chamadoSelecionado?.protocol}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="flex flex-col gap-4 py-4">
-            <div className="rounded-md bg-muted p-4 text-sm text-muted-foreground">
-              {chamadoSelecionado?.texto}
-            </div>
-
-            <Textarea
-              placeholder="Digite a resposta do chamado..."
-              className="min-h-[150px]"
-              value={textoResposta}
-              onChange={(e) => setTextoResposta(e.target.value)}
+      {isDesktop ? (
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>
+                Responder Chamado {chamadoSelecionado?.protocol}
+              </DialogTitle>
+            </DialogHeader>
+            <RespostaForm
+              chamado={chamadoSelecionado}
+              textoResposta={textoResposta}
+              setTextoResposta={setTextoResposta}
+              isSubmitting={isSubmitting}
+              onConfirm={() => setIsAlertOpen(true)}
+              onCancel={() => setIsDialogOpen(false)}
+              className="py-4"
             />
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              disabled={!textoResposta.trim() || isSubmitting}
-              onClick={() => setIsAlertOpen(true)}
-            >
-              Responder
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <Drawer open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DrawerContent>
+            <DrawerHeader className="text-left">
+              <DrawerTitle>
+                Responder Chamado {chamadoSelecionado?.protocol}
+              </DrawerTitle>
+              <DrawerDescription>
+                Forneça a solução para este ticket.
+              </DrawerDescription>
+            </DrawerHeader>
+            <RespostaForm
+              chamado={chamadoSelecionado}
+              textoResposta={textoResposta}
+              setTextoResposta={setTextoResposta}
+              isSubmitting={isSubmitting}
+              onConfirm={() => setIsAlertOpen(true)}
+              onCancel={() => setIsDialogOpen(false)}
+              className="px-4 pb-8"
+            />
+          </DrawerContent>
+        </Drawer>
+      )}
 
       {/* AlertDialog para Confirmação de Ação Irreversível */}
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>

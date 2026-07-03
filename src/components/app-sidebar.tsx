@@ -4,7 +4,12 @@ import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
-import { Sidebar, SidebarContent, SidebarFooter } from "@/components/ui/sidebar"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  useSidebar,
+} from "@/components/ui/sidebar"
 import {
   Ticket,
   HomeIcon,
@@ -16,6 +21,7 @@ import {
 } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
+import { toast } from "sonner"
 
 type UserProfile = {
   name: string
@@ -85,6 +91,8 @@ const data = {
 }
 
 export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
+  const { isMobile } = useSidebar()
+
   const [activeUser, setActiveUser] = React.useState({
     name: userProfile?.name || "Carregando...",
     email: userProfile?.email || "",
@@ -106,7 +114,8 @@ export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
           .single()
 
         if (error) {
-          console.error("Erro ao buscar dados do administrador:", error.message)
+          toast.error("Houve um erro ao buscar dados do administrador")
+          console.error(error.message)
         }
 
         setActiveUser({
@@ -130,9 +139,12 @@ export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
         )}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={activeUser} />
-      </SidebarFooter>
+
+      {!isMobile && (
+        <SidebarFooter>
+          <NavUser user={activeUser} />
+        </SidebarFooter>
+      )}
     </Sidebar>
   )
 }
