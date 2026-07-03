@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toast } from "sonner"
 
 interface ChamadoFormatado {
   id: string
@@ -46,7 +47,7 @@ interface ChamadoConcluidoDB {
 export default function Chamados() {
   const [chamados, setChamados] = useState<ChamadoFormatado[]>([])
   const [loading, setLoading] = useState(true)
-  const [abaAtiva, setAbaAtiva] = useState<"ativos" | "concluidos">("ativos")
+  const [abaAtiva, setAbaAtiva] = useState<"aberto" | "concluido">("aberto")
 
   const [chamadoSelecionado, setChamadoSelecionado] =
     useState<ChamadoFormatado | null>(null)
@@ -57,6 +58,7 @@ export default function Chamados() {
 
   const fetchChamados = useCallback(async () => {
     setLoading(true)
+    setChamados([])
     const { data: authData, error: authError } = await supabase.auth.getUser()
 
     if (authError || !authData.user) {
@@ -65,7 +67,7 @@ export default function Chamados() {
       return
     }
 
-    if (abaAtiva === "ativos") {
+    if (abaAtiva === "aberto") {
       const { data, error } = await supabase
         .from("chamados_painel")
         .select("*")
@@ -74,7 +76,8 @@ export default function Chamados() {
         .order("data", { ascending: true })
 
       if (error) {
-        console.error("Erro ao buscar chamados ativos:", error)
+        toast.error("Houve um erro ao tentar buscar chamados atribuidos a você")
+        console.error(error)
       } else {
         const chamadosSLA =
           data?.map((chamado) => {
@@ -94,24 +97,22 @@ export default function Chamados() {
         setChamados(chamadosSLA)
       }
     } else {
-      // Busca os concluídos trazendo o texto da tabela de registros via inner join estruturado
       const { data, error } = await supabase
         .from("chamados")
         .select(
           `
           id, protocol, texto, data, status, agente_responsavel_id,
-          registro_chamados!inner(texto, tipo_acao)
+          registro_chamados(texto, tipo_acao)
         `
         )
         .eq("agente_responsavel_id", authData.user.id)
         .eq("status", "concluido")
-        .eq("registro_chamados.tipo_acao", "RESPOSTA_CONCLUSAO")
         .order("data", { ascending: false })
 
       if (error) {
-        console.error("Erro ao buscar chamados concluídos:", error)
+        toast.error("Houve um erro ao buscar chamados concluídos")
+        console.error(error)
       } else {
-        // Removido o 'any' e tipado utilizando a interface ChamadoConcluidoDB
         const concluidosFormatados =
           (data as unknown as ChamadoConcluidoDB[])?.map((chamado) => {
             const msAberto =
@@ -135,7 +136,17 @@ export default function Chamados() {
   }, [abaAtiva])
 
   useEffect(() => {
-    fetchChamados()
+    let isActive = true
+
+    Promise.resolve().then(() => {
+      if (isActive) {
+        void fetchChamados()
+      }
+    })
+
+    return () => {
+      isActive = false
+    }
   }, [fetchChamados])
 
   const handleAbrirDialog = (chamado: ChamadoFormatado) => {
@@ -151,7 +162,7 @@ export default function Chamados() {
     const { data: authData } = await supabase.auth.getUser()
 
     if (!authData.user) {
-      console.error("Usuário não autenticado")
+      toast.error("Usuário não autenticado")
       setIsSubmitting(false)
       return
     }
@@ -166,7 +177,8 @@ export default function Chamados() {
       })
 
     if (registroError) {
-      console.error("Erro ao salvar registro da resposta:", registroError)
+      console.error(registroError)
+      toast.error("Erro ao salvar registro da resposta")
       setIsSubmitting(false)
       return
     }
@@ -182,6 +194,7 @@ export default function Chamados() {
       return
     }
 
+    toast.success("Chamado respondido!")
     setIsSubmitting(false)
     setIsAlertOpen(false)
     setIsDialogOpen(false)
@@ -202,12 +215,12 @@ export default function Chamados() {
         {/* Removido o 'any' e definido os tipos literais estritos */}
         <Tabs
           value={abaAtiva}
-          onValueChange={(v) => setAbaAtiva(v as "ativos" | "concluidos")}
+          onValueChange={(v) => setAbaAtiva(v as "aberto" | "concluido")}
           className="w-full sm:w-auto"
         >
           <TabsList className="grid w-full grid-cols-2 sm:w-[300px]">
-            <TabsTrigger value="ativos">Em andamento</TabsTrigger>
-            <TabsTrigger value="concluidos">Concluídos</TabsTrigger>
+            <TabsTrigger value="aberto">Em andamento</TabsTrigger>
+            <TabsTrigger value="concluido">Concluídos</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

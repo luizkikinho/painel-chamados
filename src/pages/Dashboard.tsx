@@ -16,13 +16,11 @@ export default function Dashboard({
 }) {
   return (
     <div className="[--header-height:calc(--spacing(14))]">
-      <SidebarProvider className="flex flex-col">
+      <SidebarProvider className="flex h-screen flex-col overflow-hidden">
         <SiteHeader />
-        <div className="flex flex-1">
+        <div className="flex flex-1 overflow-hidden">
           <AppSidebar userProfile={userProfile} />
-          <SidebarInset>
-            {/* 2. Removemos os Skeletons fixos e colocamos o Outlet */}
-            {/* Tudo que for página vai ser renderizado automaticamente aqui dentro */}
+          <SidebarInset className="flex-1 overflow-y-auto">
             <div className="flex flex-1 flex-col gap-4 p-4">
               <Outlet />
             </div>

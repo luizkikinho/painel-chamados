@@ -122,11 +122,7 @@ export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
   }, [])
 
   return (
-    <Sidebar
-      collapsible="icon"
-      className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
-      {...props}
-    >
+    <Sidebar collapsible="icon" {...props}>
       <SidebarContent>
         <NavMain items={data.navMain} />
         {activeUser.role === "master" && (

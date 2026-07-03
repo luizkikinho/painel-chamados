@@ -2,6 +2,9 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 
 import { ChamadoCard } from "@/components/chamado-card"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { useNavigate } from "react-router"
 
 interface ChamadoFormatado {
   id: string
@@ -13,6 +16,7 @@ interface ChamadoFormatado {
 }
 
 export default function Chamados() {
+  const navigate = useNavigate()
   const [chamados, setChamados] = useState<ChamadoFormatado[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -24,6 +28,7 @@ export default function Chamados() {
       .order("data", { ascending: true })
 
     if (error) {
+      toast.error("Houve um erro ao tentar buscar chamados abertos")
       console.error("Erro ao buscar chamados:", error)
     } else {
       const chamadosSLA =
@@ -63,8 +68,16 @@ export default function Chamados() {
       .eq("id", id)
 
     if (error) {
-      console.error("Erro ao assumir chamado:", error)
+      toast.error("Houve um erro ao assumir o chamado")
+      console.error(error)
     } else {
+      toast.success("Chamado atribuido a você", {
+        action: (
+          <Button onClick={() => navigate("/chamados/meus")}>
+            Meus chamados
+          </Button>
+        ),
+      })
       setLoading(true)
       fetchChamados()
     }
