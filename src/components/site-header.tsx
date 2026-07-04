@@ -165,7 +165,7 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
           <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
             <Lock className="size-4" />
           </div>
-          <div className="hidden flex-1 text-left text-sm leading-tight sm:grid">
+          <div className="flex-1 text-left text-sm leading-tight sm:grid">
             <span className="truncate font-medium">ChamadosAdmin</span>
           </div>
         </a>

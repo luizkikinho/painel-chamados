@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabase"
-
 import { ChamadoCard } from "@/components/chamado-card"
 import {
   Dialog,
@@ -30,7 +29,17 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { cn } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface ChamadoFormatado {
   id: string
@@ -40,17 +49,6 @@ interface ChamadoFormatado {
   status: string
   isOwner: boolean
   resposta?: string
-}
-
-// Interface criada para tipar o retorno do banco e evitar o 'any'
-interface ChamadoConcluidoDB {
-  id: string
-  protocol: string
-  texto: string
-  data: string
-  status: string
-  agente_responsavel_id: string
-  registro_chamados: { texto: string; tipo_acao: string }[]
 }
 
 function RespostaForm({
@@ -109,11 +107,21 @@ export default function Chamados() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isAlertOpen, setIsAlertOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [itemsPerPage, setItemsPerPage] = useState(20)
+  const totalPages = Math.ceil(totalCount / itemsPerPage)
+
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
   const fetchChamados = useCallback(async () => {
     setLoading(true)
     setChamados([])
+
+    const from = (currentPage - 1) * itemsPerPage
+    const to = from + itemsPerPage - 1
+
     const { data: authData, error: authError } = await supabase.auth.getUser()
 
     if (authError || !authData.user) {
@@ -122,76 +130,73 @@ export default function Chamados() {
       return
     }
 
+    let query = supabase
+      .from("chamados_painel")
+      .select("*", { count: "exact" })
+      .range(from, to)
+      .eq("agente_responsavel_id", authData.user.id)
+
     if (abaAtiva === "aberto") {
-      const { data, error } = await supabase
-        .from("chamados_painel")
-        .select("*")
-        .eq("agente_responsavel_id", authData.user.id)
+      query = query
         .neq("status", "concluido")
         .order("data", { ascending: true })
-
-      if (error) {
-        toast.error("Houve um erro ao tentar buscar chamados atribuidos a você")
-        console.error(error)
-      } else {
-        const chamadosSLA =
-          data?.map((chamado) => {
-            const msAberto =
-              new Date().getTime() - new Date(chamado.data).getTime()
-            const horas = Math.floor(msAberto / (1000 * 60 * 60))
-
-            return {
-              id: chamado.id,
-              protocol: chamado.protocol,
-              texto: chamado.texto,
-              horasAberto: horas > 0 ? horas : 0,
-              status: chamado.status,
-              isOwner: true,
-            }
-          }) || []
-        setChamados(chamadosSLA)
-      }
     } else {
-      const { data, error } = await supabase
-        .from("chamados")
-        .select(
-          `
-          id, protocol, texto, data, status, agente_responsavel_id,
-          registro_chamados(texto, tipo_acao)
-        `
-        )
-        .eq("agente_responsavel_id", authData.user.id)
+      query = query
         .eq("status", "concluido")
         .order("data", { ascending: false })
-
-      if (error) {
-        toast.error("Houve um erro ao buscar chamados concluídos")
-        console.error(error)
-      } else {
-        const concluidosFormatados =
-          (data as unknown as ChamadoConcluidoDB[])?.map((chamado) => {
-            const msAberto =
-              new Date().getTime() - new Date(chamado.data).getTime()
-            const horas = Math.floor(msAberto / (1000 * 60 * 60))
-
-            return {
-              id: chamado.id,
-              protocol: chamado.protocol,
-              texto: chamado.texto,
-              horasAberto: horas > 0 ? horas : 0,
-              status: chamado.status,
-              isOwner: true,
-              resposta: chamado.registro_chamados?.[0]?.texto || "",
-            }
-          }) || []
-        setChamados(concluidosFormatados)
-      }
     }
+
+    const { data, error, count } = await query
+
+    if (error) {
+      toast.error("Houve um erro ao buscar os chamados")
+      console.error(error)
+    } else {
+      setTotalCount(count || 0)
+
+      const chamadosMapeados =
+        data?.map((chamado) => {
+          const msAberto =
+            new Date().getTime() - new Date(chamado.data).getTime()
+          const horas = Math.floor(msAberto / (1000 * 60 * 60))
+
+          return {
+            id: chamado.id,
+            protocol: chamado.protocol,
+            texto: chamado.texto,
+            horasAberto: horas > 0 ? horas : 0,
+            status: chamado.status,
+            isOwner: true,
+            resposta: chamado.resposta || "",
+          }
+        }) || []
+
+      setChamados(chamadosMapeados)
+    }
+
     setLoading(false)
-  }, [abaAtiva])
+  }, [abaAtiva, currentPage, itemsPerPage])
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    })
+  }, [currentPage])
 
   useEffect(() => {
     let isActive = true
+
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setItemsPerPage(10)
+      } else {
+        setItemsPerPage(20)
+      }
+    }
+
+    handleResize()
+    window.addEventListener("resize", handleResize)
 
     Promise.resolve().then(() => {
       if (isActive) {
@@ -201,6 +206,7 @@ export default function Chamados() {
 
     return () => {
       isActive = false
+      window.removeEventListener("resize", handleResize)
     }
   }, [fetchChamados])
 
@@ -254,7 +260,45 @@ export default function Chamados() {
     setIsAlertOpen(false)
     setIsDialogOpen(false)
     setChamadoSelecionado(null)
+    setCurrentPage(1)
     fetchChamados()
+  }
+
+  const renderPageNumbers = () => {
+    const getVisiblePages = (current: number, total: number) => {
+      if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1)
+      if (current <= 3) return [1, 2, 3, 4, "...", total]
+      if (current >= total - 2)
+        return [1, "...", total - 3, total - 2, total - 1, total]
+      return [1, "...", current - 1, current, current + 1, "...", total]
+    }
+
+    const visiblePages = getVisiblePages(currentPage, totalPages)
+
+    return visiblePages.map((page, index) => {
+      if (page === "...") {
+        return (
+          <PaginationItem key={`ellipsis-${index}`}>
+            <PaginationEllipsis />
+          </PaginationItem>
+        )
+      }
+
+      return (
+        <PaginationItem key={page}>
+          <PaginationLink
+            href="#"
+            isActive={currentPage === page}
+            onClick={(e) => {
+              e.preventDefault()
+              setCurrentPage(page as number)
+            }}
+          >
+            {page}
+          </PaginationLink>
+        </PaginationItem>
+      )
+    })
   }
 
   return (
@@ -267,10 +311,12 @@ export default function Chamados() {
           </p>
         </div>
 
-        {/* Removido o 'any' e definido os tipos literais estritos */}
         <Tabs
           value={abaAtiva}
-          onValueChange={(v) => setAbaAtiva(v as "aberto" | "concluido")}
+          onValueChange={(v) => {
+            setAbaAtiva(v as "aberto" | "concluido")
+            setCurrentPage(1)
+          }}
           className="w-full sm:w-auto"
         >
           <TabsList className="grid w-full grid-cols-2 sm:w-[300px]">
@@ -281,29 +327,77 @@ export default function Chamados() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Carregando chamados...</p>
-      ) : chamados.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Nenhum chamado encontrado nesta aba.
-        </p>
-      ) : (
         <div className="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {chamados.map((chamado) => (
-            <ChamadoCard
-              key={chamado.id}
-              id={chamado.protocol || chamado.id.substring(0, 8)}
-              horasAberto={chamado.horasAberto}
-              texto={chamado.texto}
-              status={chamado.status}
-              isOwner={chamado.isOwner}
-              resposta={chamado.resposta}
-              onResponder={() => handleAbrirDialog(chamado)}
-            />
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div
+              key={index}
+              className="flex h-[180px] flex-col justify-between space-y-4 rounded-xl border p-4"
+            >
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+              </div>
+              <Skeleton className="h-9 w-full rounded-md" />
+            </div>
           ))}
         </div>
+      ) : chamados.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Nenhum chamado encontrado.
+        </p>
+      ) : (
+        <>
+          <div className="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {chamados.map((chamado) => (
+              <ChamadoCard
+                key={chamado.id}
+                id={chamado.protocol || chamado.id.substring(0, 8)}
+                horasAberto={chamado.horasAberto}
+                texto={chamado.texto}
+                status={chamado.status}
+                isOwner={chamado.isOwner}
+                resposta={chamado.resposta}
+                onResponder={() => handleAbrirDialog(chamado)}
+              />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="sticky bottom-0 z-10 mt-auto w-full border-t bg-background py-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      text="Anterior"
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (currentPage > 1) setCurrentPage(currentPage - 1)
+                      }}
+                    />
+                  </PaginationItem>
+
+                  {renderPageNumbers()}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      text="Próximo"
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (currentPage < totalPages)
+                          setCurrentPage(currentPage + 1)
+                      }}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Dialog Principal de Resposta */}
       {isDesktop ? (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-[600px]">
@@ -347,7 +441,6 @@ export default function Chamados() {
         </Drawer>
       )}
 
-      {/* AlertDialog para Confirmação de Ação Irreversível */}
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

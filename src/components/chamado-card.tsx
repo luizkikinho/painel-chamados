@@ -7,7 +7,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card"
-import { TicketIcon, CornerDownRight } from "lucide-react"
+import { TicketIcon, CornerDownRight, Lock } from "lucide-react"
 
 interface ChamadoCardProps {
   id: string
@@ -44,6 +44,8 @@ export function ChamadoCard({
     badgeTexto = "A responder"
   }
 
+  const isConfidential = texto === "*** CONTEÚDO EM SIGILO ABSOLUTO ***"
+
   return (
     <Card className="flex flex-col transition-colors hover:bg-muted/50">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -66,11 +68,23 @@ export function ChamadoCard({
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col gap-3">
-        <CardTitle className="line-clamp-2 text-base leading-snug">
-          {texto}
+        <CardTitle
+          className={`line-clamp-2 text-base leading-snug ${
+            isConfidential
+              ? "flex items-center gap-2 text-sm font-normal text-muted-foreground italic"
+              : ""
+          }`}
+        >
+          {isConfidential ? (
+            <>
+              <Lock className="size-4 shrink-0" />
+              Conteúdo protegido
+            </>
+          ) : (
+            texto
+          )}
         </CardTitle>
 
-        {/* Exibição da resposta caso exista */}
         {status === "concluido" && resposta && (
           <div className="mt-2 flex gap-2 rounded-sm bg-muted/70 p-2.5 text-xs text-muted-foreground">
             <CornerDownRight className="mt-0.5 size-3.5 shrink-0 text-primary" />

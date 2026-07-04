@@ -1,29 +1,52 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
-
 import { ChamadoCard } from "@/components/chamado-card"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 interface ChamadoFormatado {
   id: string
   protocol: string
   horasAberto: number
   texto: string
+  status: string
 }
 
 export default function Chamados() {
   const [chamados, setChamados] = useState<ChamadoFormatado[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetchChamados = async () => {
-    const { data, error } = await supabase
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [itemsPerPage, setItemsPerPage] = useState(20)
+  const totalPages = Math.ceil(totalCount / itemsPerPage)
+
+  const fetchChamados = useCallback(async () => {
+    setLoading(true)
+
+    const from = (currentPage - 1) * itemsPerPage
+    const to = from + itemsPerPage - 1
+
+    const { data, error, count } = await supabase
       .from("chamados_painel")
-      .select("*")
+      .select("*", { count: "exact" })
       .eq("status", "concluido")
+      .range(from, to)
       .order("data", { ascending: false })
 
     if (error) {
       console.error("Erro ao buscar chamados:", error)
     } else {
+      setTotalCount(count || 0)
+
       const chamadosSLA =
         data?.map((chamado) => {
           const msAberto =
@@ -34,6 +57,7 @@ export default function Chamados() {
             id: chamado.id,
             protocol: chamado.protocol,
             texto: chamado.texto,
+            status: chamado.status,
             horasAberto: horas > 0 ? horas : 0,
           }
         }) || []
@@ -41,11 +65,40 @@ export default function Chamados() {
       setChamados(chamadosSLA)
     }
     setLoading(false)
-  }
+  }, [currentPage, itemsPerPage])
 
   useEffect(() => {
-    fetchChamados()
-  }, [])
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    })
+  }, [currentPage])
+
+  useEffect(() => {
+    let isActive = true
+
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setItemsPerPage(10)
+      } else {
+        setItemsPerPage(20)
+      }
+    }
+
+    handleResize()
+    window.addEventListener("resize", handleResize)
+
+    Promise.resolve().then(() => {
+      if (isActive) {
+        void fetchChamados()
+      }
+    })
+
+    return () => {
+      isActive = false
+      window.removeEventListener("resize", handleResize)
+    }
+  }, [fetchChamados])
 
   const handleAtender = async (id: string) => {
     const {
@@ -61,9 +114,45 @@ export default function Chamados() {
     if (error) {
       console.error("Erro ao assumir chamado:", error)
     } else {
-      setLoading(true)
       fetchChamados()
     }
+  }
+
+  const renderPageNumbers = () => {
+    const getVisiblePages = (current: number, total: number) => {
+      if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1)
+      if (current <= 3) return [1, 2, 3, 4, "...", total]
+      if (current >= total - 2)
+        return [1, "...", total - 3, total - 2, total - 1, total]
+      return [1, "...", current - 1, current, current + 1, "...", total]
+    }
+
+    const visiblePages = getVisiblePages(currentPage, totalPages)
+
+    return visiblePages.map((page, index) => {
+      if (page === "...") {
+        return (
+          <PaginationItem key={`ellipsis-${index}`}>
+            <PaginationEllipsis />
+          </PaginationItem>
+        )
+      }
+
+      return (
+        <PaginationItem key={page}>
+          <PaginationLink
+            href="#"
+            isActive={currentPage === page}
+            onClick={(e) => {
+              e.preventDefault()
+              setCurrentPage(page as number)
+            }}
+          >
+            {page}
+          </PaginationLink>
+        </PaginationItem>
+      )
+    })
   }
 
   return (
@@ -78,23 +167,75 @@ export default function Chamados() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Carregando chamados...</p>
+        <div className="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div
+              key={index}
+              className="flex h-[180px] flex-col justify-between space-y-4 rounded-xl border p-4"
+            >
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-1/3" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+              </div>
+              <Skeleton className="h-9 w-full rounded-md" />
+            </div>
+          ))}
+        </div>
       ) : chamados.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Nenhum chamado pendente no momento.
         </p>
       ) : (
-        <div className="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {chamados.map((chamado) => (
-            <ChamadoCard
-              key={chamado.id}
-              id={chamado.protocol || chamado.id.substring(0, 8)} // Exibindo o protocolo ou um pedaço do UUID
-              horasAberto={chamado.horasAberto}
-              texto={chamado.texto}
-              onAtender={() => handleAtender(chamado.id)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid auto-rows-min gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {chamados.map((chamado) => (
+              <ChamadoCard
+                key={chamado.id}
+                id={chamado.protocol || chamado.id.substring(0, 8)}
+                horasAberto={chamado.horasAberto}
+                texto={chamado.texto}
+                status={chamado.status}
+                isOwner={false}
+                onResponder={async () => {}}
+                onAtender={() => handleAtender(chamado.id)}
+              />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="sticky bottom-0 z-10 mt-auto w-full border-t bg-background py-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      text="Anterior"
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (currentPage > 1) setCurrentPage(currentPage - 1)
+                      }}
+                    />
+                  </PaginationItem>
+
+                  {renderPageNumbers()}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      text="Próximo"
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (currentPage < totalPages)
+                          setCurrentPage(currentPage + 1)
+                      }}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
