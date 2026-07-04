@@ -15,7 +15,7 @@ interface ChamadoCardProps {
   texto: string
   status: string
   isOwner: boolean
-  resposta?: string // Adicionado
+  resposta?: string
   onAtender?: (id: string) => void
   onResponder: (id: string) => void
 }
@@ -32,20 +32,16 @@ export function ChamadoCard({
 }: ChamadoCardProps) {
   let variant: "default" | "secondary" | "destructive" | "outline" = "secondary"
   let corClasses = "bg-green-500/10 text-green-500 hover:bg-green-500/20"
-  let urgenciaTexto = "Baixa"
+  let badgeTexto = "Aberto"
 
-  if (horasAberto >= 48) {
-    variant = "destructive"
+  if (status === "aberto") {
+    variant = "outline"
     corClasses = ""
-    urgenciaTexto = "Crítica"
-  } else if (horasAberto >= 24) {
-    variant = "secondary"
-    corClasses = "bg-orange-500/10 text-orange-600 hover:bg-orange-500/20"
-    urgenciaTexto = "Alta"
-  } else if (horasAberto >= 4) {
-    variant = "secondary"
-    corClasses = "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
-    urgenciaTexto = "Média"
+    badgeTexto = "Aberto"
+  } else if (status === "em_andamento") {
+    variant = "outline"
+    corClasses = "bg-yellow-500/8 text-orange-300 hover:bg-yellow-500/20"
+    badgeTexto = "A responder"
   }
 
   return (
@@ -59,7 +55,7 @@ export function ChamadoCard({
               : corClasses
           }
         >
-          {status === "concluido" ? "Concluído" : `${urgenciaTexto} Urgência`}
+          {status === "concluido" ? "Concluído" : `${badgeTexto}`}
         </Badge>
 
         {status !== "concluido" && (
