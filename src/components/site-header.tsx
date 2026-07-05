@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { useNavigate } from "react-router"
-import { SearchForm } from "@/components/search-form"
 import {
   Lock,
   User,
@@ -11,6 +10,8 @@ import {
   UsersIcon,
   MessageSquareIcon,
   BuildingIcon,
+  UserCircle2Icon,
+  LogOutIcon,
 } from "lucide-react"
 import {
   Drawer,
@@ -46,39 +47,46 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
 
   const isAdmin = userProfile?.cargo === "master"
 
-  // Variáveis preparadas para receber os dados reais do banco no futuro
-  const empresaLogo = null // Ex: "https://bucket.supabase.co/logo.png"
+  const empresaLogo = null
   const empresaNome = "ChamadosAdmin"
 
   return (
-    <header className="relative sticky top-0 z-10 flex h-[var(--header-height)] w-full items-center justify-between border-b bg-background px-4">
-      {/* 1. Lado Esquerdo: Drawer de Menu Principal (Apenas Mobile) */}
+    <header className="relative flex h-16 shrink-0 items-center justify-between px-4 md:px-6">
+      {/* 1. Lado Esquerdo: Menu Mobile Completo */}
       <div className="z-10 flex items-center gap-2">
         <div className="md:hidden">
           <Drawer open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <DrawerTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-sidebar-foreground"
+              >
                 <Menu className="h-5 w-5" />
               </Button>
             </DrawerTrigger>
             <DrawerContent>
-              <DrawerHeader className="text-left">
+              <DrawerHeader className="border-b border-border/40 pb-4 text-left">
                 <DrawerTitle>Menu Principal</DrawerTitle>
               </DrawerHeader>
 
-              <div className="flex max-h-[80vh] flex-col gap-1 overflow-y-auto p-4 pb-8">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => handleNav("/")}
-                >
-                  <HomeIcon className="mr-2 h-4 w-4" /> Dashboard
-                </Button>
+              <div className="flex max-h-[75vh] flex-col gap-6 overflow-y-auto p-4 pb-8">
+                {/* Categoria: Visão Geral */}
+                <div className="flex flex-col gap-1">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => handleNav("/")}
+                  >
+                    <HomeIcon className="mr-2 h-4 w-4" /> Dashboard
+                  </Button>
+                </div>
 
-                <div className="py-2">
-                  <p className="mb-1 px-4 text-xs font-medium text-muted-foreground">
+                {/* Categoria: Chamados */}
+                <div className="flex flex-col gap-1">
+                  <h4 className="mb-2 px-4 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                     Chamados
-                  </p>
+                  </h4>
                   <Button
                     variant="ghost"
                     className="w-full justify-start pl-8"
@@ -109,37 +117,43 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
                   </Button>
                 </div>
 
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => handleNav("/faq")}
-                >
-                  <CircleQuestionMarkIcon className="mr-2 h-4 w-4" /> FAQ
-                </Button>
+                {/* Categoria: Sistema */}
+                <div className="flex flex-col gap-1">
+                  <h4 className="mb-2 px-4 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+                    Sistema
+                  </h4>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => handleNav("/faq")}
+                  >
+                    <CircleQuestionMarkIcon className="mr-2 h-4 w-4" /> FAQ
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => handleNav("/config")}
+                  >
+                    <Settings2 className="mr-2 h-4 w-4" /> Configurações
+                  </Button>
+                </div>
 
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  onClick={() => handleNav("/config")}
-                >
-                  <Settings2 className="mr-2 h-4 w-4" /> Configurações
-                </Button>
-
+                {/* Categoria: Administração (Exclusivo Master) */}
                 {isAdmin && (
-                  <div className="py-2">
-                    <p className="mb-1 px-4 text-xs font-medium text-muted-foreground">
+                  <div className="flex flex-col gap-1">
+                    <h4 className="mb-2 px-4 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                       Menu Administrativo
-                    </p>
+                    </h4>
                     <Button
                       variant="ghost"
-                      className="w-full justify-start pl-8"
+                      className="w-full justify-start"
                       onClick={() => handleNav("/admin/usuarios")}
                     >
                       <UsersIcon className="mr-2 h-4 w-4" /> Usuários
                     </Button>
                     <Button
                       variant="ghost"
-                      className="w-full justify-start pl-8"
+                      className="w-full justify-start"
                       onClick={() => handleNav("/admin/whatsapp")}
                     >
                       <MessageSquareIcon className="mr-2 h-4 w-4" /> WhatsApp
@@ -147,7 +161,7 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
                     </Button>
                     <Button
                       variant="ghost"
-                      className="w-full justify-start pl-8"
+                      className="w-full justify-start"
                       onClick={() => handleNav("/admin/empresa")}
                     >
                       <BuildingIcon className="mr-2 h-4 w-4" /> Empresa
@@ -160,7 +174,7 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
         </div>
       </div>
 
-      {/* 2. Centro: Identidade Visual Centralizada (White-Label) */}
+      {/* 2. Centro: Identidade Visual */}
       <div className="pointer-events-none absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center">
         <a href="/" className="pointer-events-auto flex items-center gap-2">
           {empresaLogo ? (
@@ -171,23 +185,21 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
             />
           ) : (
             <>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <Lock className="size-4" />
               </div>
               <div className="hidden text-left text-sm leading-tight sm:grid">
-                <span className="truncate font-medium">{empresaNome}</span>
+                <span className="truncate font-semibold tracking-tight text-sidebar-foreground">
+                  {empresaNome}
+                </span>
               </div>
             </>
           )}
         </a>
       </div>
 
-      {/* 3. Lado Direito: Busca e Perfil */}
+      {/* 3. Lado Direito: Perfil (Mobile) com Ícones */}
       <div className="z-10 flex items-center justify-end gap-2">
-        <div className="hidden sm:block">
-          <SearchForm className="w-full sm:w-auto" />
-        </div>
-
         <div className="flex items-center md:hidden">
           <Drawer open={isProfileOpen} onOpenChange={setIsProfileOpen}>
             <DrawerTrigger asChild>
@@ -200,24 +212,24 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
               </Button>
             </DrawerTrigger>
             <DrawerContent>
-              <DrawerHeader className="text-left">
+              <DrawerHeader className="border-b border-border/40 pb-4 text-left">
                 <DrawerTitle>Meu Perfil</DrawerTitle>
               </DrawerHeader>
-
-              <div className="flex flex-col gap-4 p-4 pb-8">
+              <div className="flex flex-col gap-2 p-4 pb-8">
                 <Button
-                  variant="outline"
-                  className="justify-start"
+                  variant="ghost"
+                  className="w-full justify-start"
                   onClick={() => handleNav("/config")}
                 >
-                  Configurações da Conta
+                  <UserCircle2Icon className="mr-2 h-4 w-4" /> Configurações da
+                  Conta
                 </Button>
                 <Button
                   variant="destructive"
-                  className="justify-start"
+                  className="w-full justify-start bg-red-600/10 text-red-600 hover:bg-red-600/20"
                   onClick={() => supabase.auth.signOut()}
                 >
-                  Sair do Sistema
+                  <LogOutIcon className="mr-2 h-4 w-4" /> Sair do Sistema
                 </Button>
               </div>
             </DrawerContent>

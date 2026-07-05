@@ -15,18 +15,21 @@ export default function Dashboard({
   userProfile: UserProfile
 }) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden [--header-height:calc(--spacing(14))]">
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-sidebar">
+      {/* HEADER IMUTÁVEL NO TOPO */}
       <SiteHeader userProfile={userProfile} />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Adicionado !min-h-0 para evitar que o provedor passe de 100% da área disponível */}
+        {/* A MÁGICA: !min-h-0 impede a Sidebar de transbordar pelo fundo da tela */}
         <SidebarProvider className="flex h-full !min-h-0 w-full">
           <AppSidebar userProfile={userProfile} />
 
-          <SidebarInset className="flex flex-1 flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-4 md:p-6">
-              <Outlet />
-            </div>
+          <SidebarInset className="flex flex-1 flex-col overflow-hidden bg-transparent">
+            <main className="flex flex-1 flex-col overflow-hidden rounded-[2rem] border border-border/50 bg-background shadow-md">
+              <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                <Outlet />
+              </div>
+            </main>
           </SidebarInset>
         </SidebarProvider>
       </div>

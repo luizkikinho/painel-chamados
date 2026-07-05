@@ -364,9 +364,9 @@ export default function Chamados() {
           </div>
 
           {totalPages > 1 && (
-            <div className="sticky bottom-0 z-10 mt-auto w-full border-t bg-background py-4">
+            <div className="mt-auto flex w-full items-center justify-center border-t border-border/40 bg-transparent pt-6 pb-2">
               <Pagination>
-                <PaginationContent>
+                <PaginationContent className="flex-wrap gap-1 sm:gap-2">
                   <PaginationItem>
                     <PaginationPrevious
                       text="Anterior"
@@ -375,6 +375,11 @@ export default function Chamados() {
                         e.preventDefault()
                         if (currentPage > 1) setCurrentPage(currentPage - 1)
                       }}
+                      className={
+                        currentPage <= 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
                     />
                   </PaginationItem>
 
@@ -389,6 +394,11 @@ export default function Chamados() {
                         if (currentPage < totalPages)
                           setCurrentPage(currentPage + 1)
                       }}
+                      className={
+                        currentPage >= totalPages
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
                     />
                   </PaginationItem>
                 </PaginationContent>

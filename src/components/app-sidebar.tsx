@@ -136,22 +136,26 @@ export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
   return (
     <Sidebar
       collapsible="icon"
-      className="group/sidebar relative !h-full"
+      className="group/sidebar relative !h-full !border-none"
       {...props}
     >
-      <button
-        onClick={toggleSidebar}
-        className="absolute top-3 -right-4 z-[100] hidden h-8 w-8 -translate-x-2 cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground opacity-0 shadow-sm transition-all duration-300 group-hover/sidebar:translate-x-0 group-hover/sidebar:opacity-100 hover:bg-accent hover:text-accent-foreground md:flex"
-        title={isCollapsed ? "Expandir menu" : "Recolher menu"}
-      >
-        {isCollapsed ? (
-          <ChevronRight className="h-4 w-4" />
-        ) : (
-          <ChevronLeft className="h-4 w-4" />
-        )}
-      </button>
+      {/* Botão flutuante reposicionado para top-2 para acompanhar os ícones */}
+      <div className="absolute top-2 -right-5 z-[100] hidden h-10 w-12 items-center justify-end opacity-0 transition-opacity duration-300 group-hover/sidebar:opacity-100 md:flex">
+        <button
+          onClick={toggleSidebar}
+          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-border/50 bg-background text-muted-foreground shadow-sm hover:bg-accent hover:text-accent-foreground"
+          title={isCollapsed ? "Expandir menu" : "Recolher menu"}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronLeft className="h-3.5 w-3.5" />
+          )}
+        </button>
+      </div>
 
-      <SidebarContent className="pt-2">
+      {/* A CAUSA DO ESPAÇO: Reduzido de pt-6 para pt-2 */}
+      <SidebarContent className="pt-2 group-data-[state=collapsed]:items-center group-data-[state=collapsed]:px-0">
         <NavMain items={data.navMain} />
         {activeUser.role === "master" && (
           <NavProjects projects={data.adminMenu} />
@@ -159,8 +163,7 @@ export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
 
-      {/* Remoção da trava do isMobile para garantir que o perfil sempre renderize */}
-      <SidebarFooter>
+      <SidebarFooter className="group-data-[state=collapsed]:items-center group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:pb-4">
         <NavUser user={activeUser} />
       </SidebarFooter>
     </Sidebar>

@@ -46,12 +46,11 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
-  const navigate = useNavigate() // Hook de navegação instanciado
+  const navigate = useNavigate()
 
   const [openDialog, setOpenDialog] = React.useState(false)
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
 
-  // Função para pegar as iniciais do nome
   const getInitials = (name: string) => {
     if (!name) return "US"
     const parts = name.trim().split(" ")
@@ -82,22 +81,22 @@ export function NavUser({
         <SidebarMenuItem>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
+              {/* A MÁGICA ESTÁ AQUI: Adicionado group-data-[state=collapsed]:mx-auto para centralizar o quadrado */}
               <SidebarMenuButton
                 size="lg"
-                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                className="group-data-[state=collapsed]:mx-auto group-data-[state=collapsed]:!h-9 group-data-[state=collapsed]:!w-9 group-data-[state=collapsed]:!justify-center group-data-[state=collapsed]:!p-0 data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
-                <Avatar className="h-8 w-8 rounded-lg">
+                <Avatar className="h-8 w-8 rounded-lg group-data-[state=collapsed]:!h-8 group-data-[state=collapsed]:!w-8">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  {/* Iniciais aplicadas aqui */}
                   <AvatarFallback className="rounded-lg">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-left text-sm leading-tight group-data-[state=collapsed]:hidden">
                   <span className="truncate font-medium">{user.name}</span>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
-                <ChevronsUpDownIcon className="ml-auto size-4" />
+                <ChevronsUpDownIcon className="ml-auto size-4 group-data-[state=collapsed]:hidden" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -123,7 +122,6 @@ export function NavUser({
               <DropdownMenuSeparator />
 
               <DropdownMenuGroup>
-                {/* Eventos de onClick adicionados com as respectivas rotas */}
                 <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={() => navigate("/conta")}
