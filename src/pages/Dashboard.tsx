@@ -19,7 +19,8 @@ export default function Dashboard({
       <SiteHeader userProfile={userProfile} />
 
       <div className="flex flex-1 overflow-hidden">
-        <SidebarProvider className="flex h-full w-full">
+        {/* Adicionado !min-h-0 para evitar que o provedor passe de 100% da área disponível */}
+        <SidebarProvider className="flex h-full !min-h-0 w-full">
           <AppSidebar userProfile={userProfile} />
 
           <SidebarInset className="flex flex-1 flex-col overflow-hidden">

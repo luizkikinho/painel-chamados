@@ -93,7 +93,7 @@ const data = {
 }
 
 export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
-  const { isMobile, toggleSidebar, state } = useSidebar()
+  const { toggleSidebar, state } = useSidebar()
   const isCollapsed = state === "collapsed"
 
   const [activeUser, setActiveUser] = React.useState({
@@ -134,22 +134,23 @@ export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
   }, [])
 
   return (
-    <Sidebar collapsible="icon" className="group/sidebar relative" {...props}>
-      {!isMobile && (
-        <button
-          onClick={toggleSidebar}
-          className="absolute top-3 -right-4 z-[100] flex h-8 w-8 -translate-x-2 cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground opacity-0 shadow-sm transition-all duration-300 group-hover/sidebar:translate-x-0 group-hover/sidebar:opacity-100 hover:bg-accent hover:text-accent-foreground"
-          title={isCollapsed ? "Expandir menu" : "Recolher menu"}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </button>
-      )}
+    <Sidebar
+      collapsible="icon"
+      className="group/sidebar relative !h-full"
+      {...props}
+    >
+      <button
+        onClick={toggleSidebar}
+        className="absolute top-3 -right-4 z-[100] hidden h-8 w-8 -translate-x-2 cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground opacity-0 shadow-sm transition-all duration-300 group-hover/sidebar:translate-x-0 group-hover/sidebar:opacity-100 hover:bg-accent hover:text-accent-foreground md:flex"
+        title={isCollapsed ? "Expandir menu" : "Recolher menu"}
+      >
+        {isCollapsed ? (
+          <ChevronRight className="h-4 w-4" />
+        ) : (
+          <ChevronLeft className="h-4 w-4" />
+        )}
+      </button>
 
-      {/* Alterado de pt-6 para pt-2 */}
       <SidebarContent className="pt-2">
         <NavMain items={data.navMain} />
         {activeUser.role === "master" && (
@@ -158,11 +159,10 @@ export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
 
-      {!isMobile && (
-        <SidebarFooter>
-          <NavUser user={activeUser} />
-        </SidebarFooter>
-      )}
+      {/* Remoção da trava do isMobile para garantir que o perfil sempre renderize */}
+      <SidebarFooter>
+        <NavUser user={activeUser} />
+      </SidebarFooter>
     </Sidebar>
   )
 }
