@@ -18,6 +18,8 @@ import {
   UsersIcon,
   MessageSquareIcon,
   BuildingIcon,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
@@ -91,7 +93,8 @@ const data = {
 }
 
 export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
-  const { isMobile } = useSidebar()
+  const { isMobile, toggleSidebar, state } = useSidebar()
+  const isCollapsed = state === "collapsed"
 
   const [activeUser, setActiveUser] = React.useState({
     name: userProfile?.name || "Carregando...",
@@ -131,8 +134,23 @@ export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
   }, [])
 
   return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarContent>
+    <Sidebar collapsible="icon" className="group/sidebar relative" {...props}>
+      {!isMobile && (
+        <button
+          onClick={toggleSidebar}
+          className="absolute top-3 -right-4 z-[100] flex h-8 w-8 -translate-x-2 cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground opacity-0 shadow-sm transition-all duration-300 group-hover/sidebar:translate-x-0 group-hover/sidebar:opacity-100 hover:bg-accent hover:text-accent-foreground"
+          title={isCollapsed ? "Expandir menu" : "Recolher menu"}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </button>
+      )}
+
+      {/* Alterado de pt-6 para pt-2 */}
+      <SidebarContent className="pt-2">
         <NavMain items={data.navMain} />
         {activeUser.role === "master" && (
           <NavProjects projects={data.adminMenu} />

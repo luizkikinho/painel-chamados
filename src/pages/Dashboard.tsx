@@ -15,16 +15,20 @@ export default function Dashboard({
   userProfile: UserProfile
 }) {
   return (
-    <div className="[--header-height:calc(--spacing(14))]">
-      <SidebarProvider className="flex h-screen overflow-hidden">
-        <AppSidebar userProfile={userProfile} />
-        <SidebarInset className="flex flex-1 flex-col overflow-hidden">
-          <SiteHeader userProfile={userProfile} />
-          <div className="flex-1 overflow-y-auto p-4 md:p-6">
-            <Outlet />
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+    <div className="flex h-screen flex-col overflow-hidden [--header-height:calc(--spacing(14))]">
+      <SiteHeader userProfile={userProfile} />
+
+      <div className="flex flex-1 overflow-hidden">
+        <SidebarProvider className="flex h-full w-full">
+          <AppSidebar userProfile={userProfile} />
+
+          <SidebarInset className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+              <Outlet />
+            </div>
+          </SidebarInset>
+        </SidebarProvider>
+      </div>
     </div>
   )
 }

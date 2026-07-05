@@ -50,7 +50,7 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
   const isAdmin = userProfile?.cargo === "master"
 
   return (
-    <header className="sticky top-0 z-50 flex h-[var(--header-height)] w-full items-center justify-between border-b bg-background px-4">
+    <header className="sticky top-0 z-10 flex h-[var(--header-height)] w-full items-center justify-between border-b bg-background px-4">
       {/* 1. Lado Esquerdo: Drawer de Menu Principal */}
       <div className="flex items-center gap-2">
         <div className="md:hidden">
@@ -162,7 +162,8 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
 
         <Separator orientation="vertical" className="mr-2 h-4 md:hidden" />
 
-        <a href="#" className="flex items-center gap-2">
+        {/* Adicionado md:ml-6 para afastar o logo do botão flutuante da sidebar */}
+        <a href="#" className="flex items-center gap-2 md:ml-6">
           <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
             <Lock className="size-4" />
           </div>
