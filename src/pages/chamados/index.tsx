@@ -12,6 +12,8 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { useNavigate } from "react-router"
 
 interface ChamadoFormatado {
   id: string
@@ -22,12 +24,13 @@ interface ChamadoFormatado {
 }
 
 export default function Chamados() {
+  const navigate = useNavigate()
   const [chamados, setChamados] = useState<ChamadoFormatado[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
 
-  const [itemsPerPage, setItemsPerPage] = useState(20)
+  const [itemsPerPage, setItemsPerPage] = useState(1)
   const totalPages = Math.ceil(totalCount / itemsPerPage)
 
   const fetchChamados = useCallback(async () => {
@@ -83,7 +86,7 @@ export default function Chamados() {
       if (window.innerWidth < 768) {
         setItemsPerPage(10)
       } else {
-        setItemsPerPage(20)
+        setItemsPerPage(15)
       }
     }
 
@@ -115,8 +118,16 @@ export default function Chamados() {
       .eq("id", id)
 
     if (error) {
-      console.error("Erro ao assumir chamado:", error)
+      toast.error("Houve um erro ao assumir o chamado")
+      console.error(error)
     } else {
+      toast.success("Chamado atribuido a você", {
+        action: (
+          <Button onClick={() => navigate("/chamados/meus")}>
+            Meus chamados
+          </Button>
+        ),
+      })
       fetchChamados()
     }
   }

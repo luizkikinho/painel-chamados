@@ -21,6 +21,7 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
+import { supabase } from "@/lib/supabase"
 
 type UserProfile = {
   name: string
@@ -201,7 +202,11 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
               >
                 Configurações da Conta
               </Button>
-              <Button variant="destructive" className="justify-start">
+              <Button
+                variant="destructive"
+                className="justify-start"
+                onClick={() => supabase.auth.signOut()}
+              >
                 Sair do Sistema
               </Button>
             </div>
