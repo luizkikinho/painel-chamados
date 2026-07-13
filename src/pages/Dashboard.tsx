@@ -15,10 +15,9 @@ export default function Dashboard({
   userProfile: UserProfile
 }) {
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-sidebar">
+    <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-sidebar">
       {/* HEADER IMUTÁVEL NO TOPO */}
       <SiteHeader userProfile={userProfile} />
-
       <div className="flex flex-1 overflow-hidden">
         {/* A MÁGICA: !min-h-0 impede a Sidebar de transbordar pelo fundo da tela */}
         <SidebarProvider className="flex h-full !min-h-0 w-full">

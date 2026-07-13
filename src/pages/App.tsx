@@ -67,7 +67,7 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-muted/20">
+      <div className="flex h-[100dvh] w-full items-center justify-center bg-muted/20">
         <p className="animate-pulse font-medium text-muted-foreground">
           Carregando sistema...
         </p>
