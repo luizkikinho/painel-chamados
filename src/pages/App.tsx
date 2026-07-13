@@ -4,6 +4,7 @@ import type { Session, User } from "@supabase/supabase-js"
 import { Routes, Route, Navigate } from "react-router"
 
 import Login from "./Login"
+import VisaoGeral from "./VisaoGeral"
 import ChamadosTodos from "./chamados/index"
 import ChamadosMeus from "./chamados/meus"
 import ChamadosAbertos from "./chamados/abertos"
@@ -25,7 +26,7 @@ function App() {
   useEffect(() => {
     async function fetchAdminProfile(user: User) {
       const { data } = await supabase
-        .from("administradores")
+        .from("administradores_api")
         .select("nome, cargo")
         .eq("id", user.id)
         .single()
@@ -93,10 +94,7 @@ function App() {
         {/* Só monta o Dashboard e as rotas filhas se existir uma sessão válida */}
         {session && (
           <Route path="/" element={<Dashboard userProfile={userProfile} />}>
-            <Route
-              index
-              element={<div>Página Inicial de Visão Geral (Em breve)</div>}
-            />
+            <Route index element={<VisaoGeral />} />
 
             <Route path="chamados" element={<ChamadosTodos />} />
             <Route path="chamados/meus" element={<ChamadosMeus />} />

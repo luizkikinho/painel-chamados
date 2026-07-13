@@ -111,7 +111,7 @@ export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
 
       if (user) {
         const { data: adminData, error } = await supabase
-          .from("administradores")
+          .from("administradores_api")
           .select("nome, cargo")
           .eq("id", user.id)
           .single()
