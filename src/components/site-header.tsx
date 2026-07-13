@@ -51,7 +51,28 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
   const empresaNome = "ChamadosAdmin"
 
   return (
-    <header className="relative flex h-16 shrink-0 items-center justify-between px-4 md:px-6">
+    <header className="relative flex h-12 shrink-0 items-center justify-between px-4 md:px-6">
+      <a href="/" className="pointer-events-auto flex items-center gap-2">
+        {empresaLogo ? (
+          <img
+            src={empresaLogo}
+            alt={empresaNome}
+            className="h-2 w-auto object-contain"
+          />
+        ) : (
+          <>
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Lock className="size-4" />
+            </div>
+            <div className="hidden text-left text-sm leading-tight sm:grid">
+              <span className="truncate font-semibold tracking-tight text-sidebar-foreground">
+                {empresaNome}
+              </span>
+            </div>
+          </>
+        )}
+      </a>
+
       {/* 1. Lado Esquerdo: Menu Mobile Completo */}
       <div className="z-10 flex items-center gap-2">
         <div className="md:hidden">
@@ -175,28 +196,6 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
       </div>
 
       {/* 2. Centro: Identidade Visual */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-        <a href="/" className="pointer-events-auto flex items-center gap-2">
-          {empresaLogo ? (
-            <img
-              src={empresaLogo}
-              alt={empresaNome}
-              className="h-8 w-auto object-contain"
-            />
-          ) : (
-            <>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Lock className="size-4" />
-              </div>
-              <div className="hidden text-left text-sm leading-tight sm:grid">
-                <span className="truncate font-semibold tracking-tight text-sidebar-foreground">
-                  {empresaNome}
-                </span>
-              </div>
-            </>
-          )}
-        </a>
-      </div>
 
       {/* 3. Lado Direito: Perfil (Mobile) com Ícones */}
       <div className="z-10 flex items-center justify-end gap-2">
