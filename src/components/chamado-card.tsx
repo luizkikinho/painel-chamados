@@ -44,7 +44,7 @@ export function ChamadoCard({
     badgeTexto = "A responder"
   }
 
-  const isConfidential = texto === "*** CONTEÚDO EM SIGILO ABSOLUTO ***"
+  const isConfidential = texto === "******"
 
   return (
     <Card className="flex flex-col transition-colors hover:bg-muted/50">

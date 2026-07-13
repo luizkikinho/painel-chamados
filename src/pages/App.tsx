@@ -11,7 +11,9 @@ import ChamadosAbertos from "./chamados/abertos"
 import ChamadosFinalizados from "./chamados/finalizados"
 import Dashboard from "./Dashboard"
 import UpdatePassword from "./Alterar-Senha"
+
 import { Toaster } from "sonner"
+import { Spinner } from "@/components/ui/spinner"
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -68,9 +70,7 @@ function App() {
   if (isLoading) {
     return (
       <div className="flex h-[100dvh] w-full items-center justify-center bg-muted/20">
-        <p className="animate-pulse font-medium text-muted-foreground">
-          Carregando sistema...
-        </p>
+        <Spinner className="size-8" />
       </div>
     )
   }
