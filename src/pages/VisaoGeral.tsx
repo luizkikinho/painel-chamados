@@ -65,16 +65,29 @@ export default function VisaoGeral() {
       const { data: catData } = await supabase
         .from("categorias")
         .select("id, name")
-      const categoriasDicionario = new Map()
+      const categoriasDicionario = new Map<string, string>()
+
+      interface CategoriaRow {
+        id: string
+        name: string
+      }
 
       if (catData) {
-        catData.forEach((cat: any) =>
+        catData.forEach((cat: CategoriaRow) =>
           categoriasDicionario.set(cat.id, cat.name)
         )
       }
 
       // 2. Buscando métricas gerais usando apenas a view
       const { data: todos } = await supabase.from("chamados_painel").select("*")
+
+      interface ChamadoRow {
+        id: string
+        protocol: string | null
+        status: string
+        data: string
+        categoria_id: string | null
+      }
 
       if (todos) {
         const counts = {
@@ -85,15 +98,16 @@ export default function VisaoGeral() {
         }
         const categoriasGrafico: Record<string, number> = {}
 
-        todos.forEach((c: any) => {
+        todos.forEach((c: ChamadoRow) => {
           // Contagem por status
           if (c.status === "pendente" || c.status === "aberto") counts.abertos++
           else if (c.status === "em_andamento") counts.emAndamento++
           else if (c.status === "concluido") counts.concluidos++
 
           // Traduzindo o categoria_id para o nome usando o mapa
-          const catName =
-            categoriasDicionario.get(c.categoria_id) || "Sem categoria"
+          const catName = c.categoria_id
+            ? categoriasDicionario.get(c.categoria_id) || "Sem categoria"
+            : "Sem categoria"
           categoriasGrafico[catName] = (categoriasGrafico[catName] || 0) + 1
         })
 
@@ -115,13 +129,13 @@ export default function VisaoGeral() {
 
       if (ultimos) {
         setRecentes(
-          ultimos.map((u: any) => ({
+          ultimos.map((u: ChamadoRow) => ({
             id: u.id,
-            protocol: u.protocol,
+            protocol: u.protocol || "",
             status: u.status,
             data: u.data,
             categoria:
-              categoriasDicionario.get(u.categoria_id) || "Sem categoria",
+              categoriasDicionario.get(u.categoria_id || "") || "Sem categoria",
           }))
         )
       }
