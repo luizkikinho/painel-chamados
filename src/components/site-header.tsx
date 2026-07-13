@@ -45,6 +45,24 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
     setIsProfileOpen(false)
   }
 
+  const handleLogout = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (user) {
+      // Limpa o token no banco de dados
+      await supabase
+        .from("administradores_api")
+        .update({ session_token: null })
+        .eq("id", user.id)
+    }
+
+    // Limpa o navegador e desloga
+    localStorage.removeItem("session_token")
+    await supabase.auth.signOut()
+  }
+
   const isAdmin = userProfile?.cargo === "master"
 
   const empresaLogo = null
@@ -262,7 +280,7 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
                 <Button
                   variant="ghost"
                   className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => supabase.auth.signOut()}
+                  onClick={handleLogout}
                 >
                   <LogOutIcon className="mr-3 h-4 w-4" />
                   Sair do Sistema

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import type { Session, User } from "@supabase/supabase-js"
 import { Routes, Route, Navigate } from "react-router"
+import { useIdleTimeout } from "@/hooks/use-idle-timeout"
 
 import Login from "./Login"
 import VisaoGeral from "./VisaoGeral"
@@ -25,21 +26,28 @@ function App() {
     email: string
   } | null>(null)
 
+  useIdleTimeout(30)
+
   useEffect(() => {
     async function fetchAdminProfile(user: User) {
-      const { data } = await supabase
-        .from("administradores_api")
+      const { data, error } = await supabase
+        .from("administradores")
         .select("nome, cargo")
         .eq("id", user.id)
         .single()
 
-      if (data) {
-        setUserProfile({
-          name: data.nome,
-          email: user.email || "",
-          cargo: data.cargo,
-        })
+      if (error || !data) {
+        await supabase.auth.signOut()
+        setUserProfile(null)
+        return
       }
+
+      // 2. Só seta o perfil se tudo acima der certo
+      setUserProfile({
+        name: data.nome,
+        email: user.email || "",
+        cargo: data.cargo,
+      })
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
