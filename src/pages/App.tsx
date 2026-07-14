@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
-import type { Session, User } from "@supabase/supabase-js"
-import { Routes, Route, Navigate } from "react-router"
+import { useEffect, useState } from "react"
+import { Routes, Route, Navigate } from "react-router" // Certifique-se de usar react-router-dom se houver erro aqui
 import { useIdleTimeout } from "@/hooks/use-idle-timeout"
+import type { Session, User } from "@supabase/supabase-js"
+import { UserContext, type UserProfile } from "@/lib/user-context"
 
 import Login from "./Login"
 import VisaoGeral from "./VisaoGeral"
+import Dashboard from "./Dashboard"
+import Conta from "./Conta"
+
 import ChamadosTodos from "./chamados/index"
 import ChamadosMeus from "./chamados/meus"
 import ChamadosAbertos from "./chamados/abertos"
 import ChamadosFinalizados from "./chamados/finalizados"
-import Dashboard from "./Dashboard"
 import UpdatePassword from "./Alterar-Senha"
 
 import { Toaster } from "sonner"
@@ -20,40 +23,44 @@ function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isRecoveringPassword, setIsRecoveringPassword] = useState(false)
-  const [userProfile, setUserProfile] = useState<{
-    name: string
-    cargo: string
-    email: string
-  } | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
 
   useIdleTimeout(30)
 
   useEffect(() => {
     async function fetchAdminProfile(user: User) {
-      const { data, error } = await supabase
-        .from("administradores")
-        .select("nome, cargo")
-        .eq("id", user.id)
-        .single()
+      try {
+        const { data, error } = await supabase
+          .from("administradores")
+          .select("nome, cargo")
+          .eq("id", user.id)
+          .single()
 
-      if (error || !data) {
-        await supabase.auth.signOut()
+        if (error || !data) {
+          console.error("Erro ao buscar perfil:", error)
+          await supabase.auth.signOut()
+          setUserProfile(null)
+          return
+        }
+
+        setUserProfile({
+          name: data.nome,
+          email: user.email || "",
+          cargo: data.cargo,
+        })
+      } catch (err) {
+        console.error("Exceção fatal ao carregar perfil:", err)
         setUserProfile(null)
-        return
       }
-
-      // 2. Só seta o perfil se tudo acima der certo
-      setUserProfile({
-        name: data.nome,
-        email: user.email || "",
-        cargo: data.cargo,
-      })
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
-      if (session?.user) fetchAdminProfile(session.user)
-      setIsLoading(false)
+      if (session?.user) {
+        fetchAdminProfile(session.user)
+      } else {
+        setIsLoading(false) // Garante que a tela de loading saia se não houver sessão
+      }
     })
 
     const {
@@ -62,9 +69,10 @@ function App() {
       setSession(session)
 
       if (session?.user) {
-        fetchAdminProfile(session.user)
+        fetchAdminProfile(session.user).finally(() => setIsLoading(false))
       } else {
         setUserProfile(null)
+        setIsLoading(false)
       }
 
       if (event === "PASSWORD_RECOVERY") {
@@ -84,22 +92,18 @@ function App() {
   }
 
   if (isRecoveringPassword) {
-    // @ts-expect-error: UpdatePassword may not have typed props in this project context
+    // @ts-expect-error: Ignorado conforme código original
     return <UpdatePassword onComplete={() => setIsRecoveringPassword(false)} />
   }
 
   return (
-    <>
+    <UserContext.Provider value={{ userProfile, setUserProfile }}>
       <Routes>
-        {/* ROTA PÚBLICA */}
-        {/* Se não tiver logado, mostra o Login. Se já estiver logado, joga para o painel principal */}
         <Route
           path="/login"
           element={!session ? <Login /> : <Navigate to="/" replace />}
         />
 
-        {/* ROTAS PROTEGIDAS */}
-        {/* Só monta o Dashboard e as rotas filhas se existir uma sessão válida */}
         {session && (
           <Route path="/" element={<Dashboard userProfile={userProfile} />}>
             <Route index element={<VisaoGeral />} />
@@ -113,40 +117,36 @@ function App() {
             />
 
             <Route path="faq" element={<div>FAQ</div>} />
-
             <Route
               path="admin/usuarios"
-              element={<div>Tela de Usuários (Acesso Master)</div>}
+              element={<div>Tela de Usuários</div>}
             />
             <Route
               path="admin/usuarios/novo"
-              element={<div>Novo Usuário (Acesso Master)</div>}
+              element={<div>Novo Usuário</div>}
             />
             <Route
               path="admin/whatsapp"
-              element={<div>Gerenciar Bot Whatsapp (Acesso Master)</div>}
+              element={<div>Gerenciar Bot Whatsapp</div>}
             />
             <Route
               path="admin/empresa"
-              element={<div>Gerenciar Dados Empresa (Acesso Master)</div>}
+              element={<div>Gerenciar Dados Empresa</div>}
             />
 
             <Route path="config" element={<div>Configurações Geral</div>} />
-            <Route path="conta" element={<div>Configurações da Conta</div>} />
+            <Route path="conta" element={<Conta />} />
             <Route path="notificacoes" element={<div>Notificações</div>} />
           </Route>
         )}
 
-        {/* ROTA FALLBACK (CATCH-ALL) */}
-        {/* Se tentar acessar algo não mapeado ou tentar burlar o acesso, redireciona */}
         <Route
           path="*"
           element={<Navigate to={session ? "/" : "/login"} replace />}
         />
       </Routes>
-
       <Toaster position="top-center" />
-    </>
+    </UserContext.Provider>
   )
 }
 
