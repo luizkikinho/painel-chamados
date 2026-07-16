@@ -139,7 +139,6 @@ export default function VisaoGeral() {
           }))
         )
       }
-
       setLoading(false)
     }
 

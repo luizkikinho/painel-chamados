@@ -16,7 +16,7 @@ import ChamadosAbertos from "./chamados/abertos"
 import ChamadosFinalizados from "./chamados/finalizados"
 import UpdatePassword from "./Alterar-Senha"
 
-import { Toaster } from "sonner"
+import { Toaster, toast } from "sonner"
 import { Spinner } from "@/components/ui/spinner"
 
 function App() {
@@ -82,6 +82,39 @@ function App() {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Escuta mudanças na sessão do banco para derrubar o usuário em caso de novo login
+  useEffect(() => {
+    if (!session?.user?.id) return
+
+    const channel = supabase
+      .channel("listen-session")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "active_sessions",
+          filter: `user_id=eq.${session.user.id}`,
+        },
+        async (payload) => {
+          console.log("Evento do banco recebido:", payload) // <-- Verifique isso no F12
+          toast.error(
+            "Sessão encerrada. Novo login detectado em outro dispositivo."
+          )
+          await supabase.auth.signOut()
+        }
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          console.log("Realtime da sessão conectado com sucesso!")
+        }
+      })
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [session?.user?.id])
 
   if (isLoading) {
     return (
