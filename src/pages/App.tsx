@@ -9,15 +9,17 @@ import Login from "./Login"
 import VisaoGeral from "./VisaoGeral"
 import Dashboard from "./Dashboard"
 import Conta from "./Conta"
+import SingupPage from "./SingupPage"
 
 import ChamadosTodos from "./chamados/index"
 import ChamadosMeus from "./chamados/meus"
 import ChamadosAbertos from "./chamados/abertos"
 import ChamadosFinalizados from "./chamados/finalizados"
-import UpdatePassword from "./Alterar-Senha"
+import UpdatePassword from "./SingupPage"
 
 import { Toaster, toast } from "sonner"
 import { Spinner } from "@/components/ui/spinner"
+import UsuariosPage from "./admin/Usuarios"
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -38,8 +40,11 @@ function App() {
 
         if (error || !data) {
           console.error("Erro ao buscar perfil:", error)
-          await supabase.auth.signOut()
-          setUserProfile(null)
+
+          if (window.location.pathname !== "/definir-senha") {
+            await supabase.auth.signOut()
+            setUserProfile(null)
+          }
           return
         }
 
@@ -137,6 +142,8 @@ function App() {
           element={!session ? <Login /> : <Navigate to="/" replace />}
         />
 
+        <Route path="/definir-senha" element={<SingupPage />} />
+
         {session && (
           <Route path="/" element={<Dashboard userProfile={userProfile} />}>
             <Route index element={<VisaoGeral />} />
@@ -150,10 +157,7 @@ function App() {
             />
 
             <Route path="faq" element={<div>FAQ</div>} />
-            <Route
-              path="admin/usuarios"
-              element={<div>Tela de Usuários</div>}
-            />
+            <Route path="admin/usuarios" element={<UsuariosPage />} />
             <Route
               path="admin/usuarios/novo"
               element={<div>Novo Usuário</div>}
