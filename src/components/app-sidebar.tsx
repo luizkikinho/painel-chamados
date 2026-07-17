@@ -71,13 +71,9 @@ const data = {
 
   adminMenu: [
     {
-      name: "Usuários",
-      url: "",
+      name: "Lista de Usuários",
+      url: "/admin/usuarios",
       icon: <UsersIcon />,
-      items: [
-        { name: "Lista de Usuários", url: "/admin/usuarios" },
-        { name: "Novo Usuário", url: "/admin/usuarios/novo" },
-      ],
     },
     {
       name: "WhatsApp Bot",

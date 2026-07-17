@@ -155,13 +155,9 @@ function App() {
               path="chamados/finalizados"
               element={<ChamadosFinalizados />}
             />
-
             <Route path="faq" element={<div>FAQ</div>} />
+
             <Route path="admin/usuarios" element={<UsuariosPage />} />
-            <Route
-              path="admin/usuarios/novo"
-              element={<div>Novo Usuário</div>}
-            />
             <Route
               path="admin/whatsapp"
               element={<div>Gerenciar Bot Whatsapp</div>}
