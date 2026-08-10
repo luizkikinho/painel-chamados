@@ -1,24 +1,26 @@
-import { supabase } from "@/lib/supabase"
-import { useEffect, useState } from "react"
-import { Routes, Route, Navigate } from "react-router" // Certifique-se de usar react-router-dom se houver erro aqui
 import { useIdleTimeout } from "@/hooks/use-idle-timeout"
-import type { Session, User } from "@supabase/supabase-js"
+import { supabase } from "@/lib/supabase"
 import { UserContext, type UserProfile } from "@/lib/user-context"
+import type { Session, User } from "@supabase/supabase-js"
+import { useEffect, useState } from "react"
+import { Navigate, Route, Routes } from "react-router" // Certifique-se de usar react-router-dom se houver erro aqui
 
-import Login from "./Login"
-import VisaoGeral from "./VisaoGeral"
-import Dashboard from "./Dashboard"
 import Conta from "./Conta"
+import Dashboard from "./Dashboard"
+import Login from "./Login"
 import SingupPage from "./SingupPage"
+import VisaoGeral from "./VisaoGeral"
 
-import ChamadosTodos from "./chamados/index"
-import ChamadosMeus from "./chamados/meus"
 import ChamadosAbertos from "./chamados/abertos"
 import ChamadosFinalizados from "./chamados/finalizados"
+import ChamadosTodos from "./chamados/index"
+import ChamadosMeus from "./chamados/meus"
 import UpdatePassword from "./SingupPage"
 
-import { Toaster, toast } from "sonner"
+import { RequireSuperAdmin } from "@/components/RequireSuperAdmin"
 import { Spinner } from "@/components/ui/spinner"
+import { Toaster, toast } from "sonner"
+import Empresas from "./admin/Empresas"
 import UsuariosPage from "./admin/Usuarios"
 
 function App() {
@@ -165,6 +167,15 @@ function App() {
             <Route
               path="admin/empresa"
               element={<div>Gerenciar Dados Empresa</div>}
+            />
+
+            <Route
+              path="admin/empresas"
+              element={
+                <RequireSuperAdmin>
+                  <Empresas />
+                </RequireSuperAdmin>
+              }
             />
 
             <Route path="config" element={<div>Configurações Geral</div>} />

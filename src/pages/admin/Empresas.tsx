@@ -1,0 +1,463 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { supabase } from "@/lib/supabase"
+import { Building2, Check, Copy, Loader2, Trash2, UserPlus } from "lucide-react"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
+
+export default function Empresas() {
+  // Gate de UX (segurança de verdade continua nas EFs)
+  const [cargo, setCargo] = useState<string | null>(null)
+  const [checking, setChecking] = useState(true)
+
+  // Criar empresa
+  const [nomeEmpresa, setNomeEmpresa] = useState("")
+  const [creatingEmpresa, setCreatingEmpresa] = useState(false)
+  const [qrDialogOpen, setQrDialogOpen] = useState(false)
+  const [qrBase64, setQrBase64] = useState("")
+  const [instanceName, setInstanceName] = useState("")
+
+  // Criar master
+  const [nomeMaster, setNomeMaster] = useState("")
+  const [emailMaster, setEmailMaster] = useState("")
+  const [empresaSelecionada, setEmpresaSelecionada] = useState("")
+  const [creatingMaster, setCreatingMaster] = useState(false)
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
+  const [generatedLink, setGeneratedLink] = useState("")
+  const [copied, setCopied] = useState(false)
+
+  // Tabela
+  const [empresas, setEmpresas] = useState<any[]>([])
+
+  const [empresaToDelete, setEmpresaToDelete] = useState<any | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  useEffect(() => {
+    const check = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        setCargo(null)
+        setChecking(false)
+        return
+      }
+      const { data } = await supabase
+        .from("administradores")
+        .select("cargo")
+        .eq("id", user.id)
+        .single()
+      setCargo(data?.cargo ?? null)
+      setChecking(false)
+    }
+    check()
+  }, [])
+
+  const fetchEmpresas = async () => {
+    const { data, error } = await supabase
+      .from("empresas")
+      .select("id, name, status, instance_name, whatsapp_status")
+      .order("name")
+    if (data) setEmpresas(data)
+    if (error) console.error("Erro ao buscar empresas:", error)
+  }
+
+  useEffect(() => {
+    if (cargo === "super_admin") fetchEmpresas()
+  }, [cargo])
+
+  const handleCreateEmpresa = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCreatingEmpresa(true)
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "create-empresa",
+        {
+          body: { nome: nomeEmpresa },
+        }
+      )
+      if (error) throw new Error(error.message || "Erro ao criar empresa.")
+      setQrBase64(data.qrBase64 ?? "")
+      setInstanceName(data.instanceName ?? "")
+      setQrDialogOpen(true)
+      setNomeEmpresa("")
+      fetchEmpresas()
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setCreatingEmpresa(false)
+    }
+  }
+
+  const handleCreateMaster = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCreatingMaster(true)
+    try {
+      const redirectTo = `${window.location.origin}/definir-senha`
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          nome: nomeMaster,
+          email: emailMaster,
+          redirectTo,
+          empresaId: empresaSelecionada,
+          cargoDestino: "master",
+        },
+      })
+      if (error) throw new Error(error.message || "Erro ao criar master.")
+      setGeneratedLink(data.link)
+      setLinkDialogOpen(true)
+      setNomeMaster("")
+      setEmailMaster("")
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setCreatingMaster(false)
+    }
+  }
+
+  const handleDisableEmpresa = async () => {
+    if (!empresaToDelete) return
+    setIsDeleting(true)
+    try {
+      const { error } = await supabase
+        .from("empresas")
+        .update({ status: false })
+        .eq("id", empresaToDelete.id)
+      if (error) throw new Error(error.message)
+      toast.success(`Empresa "${empresaToDelete.name}" desativada`)
+      fetchEmpresas()
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setIsDeleting(false)
+      setEmpresaToDelete(null)
+    }
+  }
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(generatedLink)
+    setCopied(true)
+    toast.success("Link copiado!")
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (checking) return <div className="p-8">Verificando acesso...</div>
+  if (cargo !== "super_admin") {
+    return <div className="p-8 text-muted-foreground">Acesso restrito.</div>
+  }
+
+  const qrSrc = qrBase64.startsWith("data:")
+    ? qrBase64
+    : `data:image/png;base64,${qrBase64}`
+
+  return (
+    <div className="space-y-6 p-6 md:p-8">
+      <h1 className="text-3xl font-bold tracking-tight">Gerenciar Empresas</h1>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              <CardTitle>Nova Empresa</CardTitle>
+            </div>
+            <CardDescription>
+              Cria a empresa e provisiona a instância do WhatsApp na hora.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateEmpresa} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nomeEmpresa">Nome da empresa</Label>
+                <Input
+                  id="nomeEmpresa"
+                  required
+                  value={nomeEmpresa}
+                  onChange={(e) => setNomeEmpresa(e.target.value)}
+                  disabled={creatingEmpresa}
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={creatingEmpresa}
+              >
+                {creatingEmpresa && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {creatingEmpresa ? "Provisionando..." : "Criar empresa"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              <CardTitle>Primeiro Master</CardTitle>
+            </div>
+            <CardDescription>
+              Gera o convite do master (ele define a própria senha).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateMaster} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Empresa</Label>
+                <Select
+                  value={empresaSelecionada}
+                  onValueChange={setEmpresaSelecionada}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {empresas.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="nomeMaster">Nome completo</Label>
+                <Input
+                  id="nomeMaster"
+                  required
+                  value={nomeMaster}
+                  onChange={(e) => setNomeMaster(e.target.value)}
+                  disabled={creatingMaster}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emailMaster">E-mail</Label>
+                <Input
+                  id="emailMaster"
+                  type="email"
+                  required
+                  value={emailMaster}
+                  onChange={(e) => setEmailMaster(e.target.value)}
+                  disabled={creatingMaster}
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={creatingMaster}
+              >
+                {creatingMaster && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {creatingMaster ? "Gerando convite..." : "Gerar convite"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Empresas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Instância</TableHead>
+                  <TableHead>WhatsApp</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {empresas.map((emp) => {
+                  return (
+                    <TableRow key={emp.id}>
+                      <TableCell className="font-medium">{emp.name}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {emp.instance_name ?? "—"}
+                      </TableCell>
+                      <TableCell className="capitalize">
+                        {emp.whatsapp_status ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={emp.status ? "default" : "secondary"}>
+                          {emp.status ? "Ativa" : "Desativada"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {emp.status !== false && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEmpresaToDelete(emp)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <span className="sr-only">
+                                  Desativar empresa
+                                </span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Desativar {emp.name}?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  A empresa para de responder no WhatsApp e sai
+                                  do seletor de convites. Os dados permanecem no
+                                  banco para auditoria (soft delete).
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={handleDisableEmpresa}
+                                  disabled={isDeleting}
+                                >
+                                  {isDeleting ? "Desativando..." : "Desativar"}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+                {empresas.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      Nenhuma empresa encontrada.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dialog do QR Code */}
+      <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Empresa criada! Escaneie o QR Code</DialogTitle>
+            <DialogDescription>
+              Instância <span className="font-mono">{instanceName}</span>.
+              Escaneie com o WhatsApp da empresa.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center p-4">
+            {qrBase64 ? (
+              <img
+                src={qrSrc}
+                alt="QR Code da instância"
+                className="h-64 w-64 rounded-lg border"
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                QR não disponível.
+              </p>
+            )}
+          </div>
+          <DialogFooter className="sm:justify-start">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setQrDialogOpen(false)}
+            >
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog do link do master */}
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Master criado com sucesso</DialogTitle>
+            <DialogDescription>
+              Copie o link e envie para o master definir a senha.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2">
+            <div className="grid flex-1 gap-2">
+              <Input defaultValue={generatedLink} readOnly />
+            </div>
+            <Button type="button" size="icon" onClick={handleCopyLink}>
+              <span className="sr-only">Copiar</span>
+              {copied ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          <DialogFooter className="sm:justify-start">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setLinkDialogOpen(false)}
+            >
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
