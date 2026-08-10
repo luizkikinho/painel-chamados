@@ -11,15 +11,16 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import {
-  Ticket,
-  HomeIcon,
-  CircleQuestionMarkIcon,
-  Settings2,
-  UsersIcon,
-  MessageSquareIcon,
+  Building2,
   BuildingIcon,
   ChevronLeft,
   ChevronRight,
+  CircleQuestionMarkIcon,
+  HomeIcon,
+  MessageSquareIcon,
+  Settings2,
+  Ticket,
+  UsersIcon,
 } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
@@ -84,6 +85,14 @@ const data = {
       name: "Empresa",
       url: "/admin/empresa",
       icon: <BuildingIcon />,
+    },
+  ],
+
+  superAdmin: [
+    {
+      name: "Empresas Registradas",
+      url: "/admin/empresas",
+      icon: <Building2 />,
     },
   ],
 }
@@ -153,8 +162,12 @@ export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
       {/* A CAUSA DO ESPAÇO: Reduzido de pt-6 para pt-2 */}
       <SidebarContent className="pt-2 group-data-[state=collapsed]:items-center group-data-[state=collapsed]:px-0">
         <NavMain items={data.navMain} />
-        {activeUser.role === "master" && (
-          <NavProjects projects={data.adminMenu} />
+        {activeUser.role === "master" ||
+          (activeUser.role === "super_admin" && (
+            <NavProjects projects={data.adminMenu} />
+          ))}
+        {activeUser.role === "super_admin" && (
+          <NavProjects projects={data.superAdmin} />
         )}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
