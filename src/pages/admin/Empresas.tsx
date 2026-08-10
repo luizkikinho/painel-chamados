@@ -44,7 +44,15 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { supabase } from "@/lib/supabase"
-import { Building2, Check, Copy, Loader2, Trash2, UserPlus } from "lucide-react"
+import {
+  Building2,
+  Check,
+  Copy,
+  Loader2,
+  RotateCcw,
+  Trash2,
+  UserPlus,
+} from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -174,6 +182,37 @@ export default function Empresas() {
     } finally {
       setIsDeleting(false)
       setEmpresaToDelete(null)
+    }
+  }
+
+  const handleReenableEmpresa = async (emp: any) => {
+    try {
+      const { error } = await supabase
+        .from("empresas")
+        .update({ status: true })
+        .eq("id", emp.id)
+      if (error) throw new Error(error.message)
+      toast.success(`Empresa "${emp.name}" reativada.`)
+      fetchEmpresas()
+    } catch (error: any) {
+      toast.error(error.message)
+    }
+  }
+
+  const handleConnectWhats = async (emp: any) => {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "get-qr-empresa",
+        {
+          body: { empresaId: emp.id },
+        }
+      )
+      if (error) throw new Error(error.message)
+      setQrBase64(data.qrBase64 ?? "")
+      setInstanceName(emp.instance_name ?? "")
+      setQrDialogOpen(true)
+    } catch (error: any) {
+      toast.error(error.message)
     }
   }
 
@@ -324,8 +363,15 @@ export default function Empresas() {
                       <TableCell className="font-mono text-xs">
                         {emp.instance_name ?? "—"}
                       </TableCell>
-                      <TableCell className="capitalize">
-                        {emp.whatsapp_status ?? "—"}
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          className="text-muted-foreground capitalize"
+                          disabled={emp.status === false}
+                          onClick={() => handleConnectWhats(emp)}
+                        >
+                          {emp.whatsapp_status ?? "--"}
+                        </Button>
                       </TableCell>
                       <TableCell>
                         <Badge variant={emp.status ? "default" : "secondary"}>
@@ -333,7 +379,7 @@ export default function Empresas() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {emp.status !== false && (
+                        {emp.status !== false ? (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
@@ -369,6 +415,14 @@ export default function Empresas() {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleReenableEmpresa(emp)}
+                          >
+                            <RotateCcw className="mr-1 h-4 w-4" /> Reativar
+                          </Button>
                         )}
                       </TableCell>
                     </TableRow>
