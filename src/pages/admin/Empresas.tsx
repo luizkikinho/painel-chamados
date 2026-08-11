@@ -234,7 +234,9 @@ export default function Empresas() {
 
   return (
     <div className="space-y-6 p-6 md:p-8">
-      <h1 className="text-3xl font-bold tracking-tight">Gerenciar Empresas</h1>
+      <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+        Gerenciar Empresas
+      </h1>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card>
@@ -344,14 +346,16 @@ export default function Empresas() {
           <CardTitle>Empresas</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          <div className="overflow-x-auto rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Instância</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    Instância
+                  </TableHead>
                   <TableHead>WhatsApp</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden sm:table-cell">Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -360,7 +364,7 @@ export default function Empresas() {
                   return (
                     <TableRow key={emp.id}>
                       <TableCell className="font-medium">{emp.name}</TableCell>
-                      <TableCell className="font-mono text-xs">
+                      <TableCell className="hidden font-mono text-xs md:table-cell">
                         {emp.instance_name ?? "—"}
                       </TableCell>
                       <TableCell>
@@ -373,7 +377,7 @@ export default function Empresas() {
                           {emp.whatsapp_status ?? "--"}
                         </Button>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <Badge variant={emp.status ? "default" : "secondary"}>
                           {emp.status ? "Ativa" : "Desativada"}
                         </Badge>
@@ -459,7 +463,7 @@ export default function Empresas() {
               <img
                 src={qrSrc}
                 alt="QR Code da instância"
-                className="h-64 w-64 rounded-lg border"
+                className="h-56 w-56 rounded-lg border sm:h-64 sm:w-64"
               />
             ) : (
               <p className="text-sm text-muted-foreground">
