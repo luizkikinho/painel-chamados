@@ -223,6 +223,50 @@ export default function Empresas() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // dentro do componente, antes do return
+  const renderAcoes = (emp: any) =>
+    emp.status !== false ? (
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setEmpresaToDelete(emp)}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+            <span className="sr-only">Desativar empresa</span>
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desativar {emp.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A empresa para de responder no WhatsApp e sai do seletor de
+              convites. Os dados permanecem no banco para auditoria (soft
+              delete).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDisableEmpresa}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Desativando..." : "Desativar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    ) : (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => handleReenableEmpresa(emp)}
+      >
+        <RotateCcw className="mr-1 h-4 w-4" /> Reativar
+      </Button>
+    )
+
   if (checking) return <div className="p-8">Verificando acesso...</div>
   if (cargo !== "super_admin") {
     return <div className="p-8 text-muted-foreground">Acesso restrito.</div>
@@ -233,12 +277,18 @@ export default function Empresas() {
     : `data:image/png;base64,${qrBase64}`
 
   return (
-    <div className="space-y-6 p-6 md:p-8">
-      <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
-        Gerenciar Empresas
-      </h1>
+    <div className="space-y-6 p-4 sm:p-6 md:p-8">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          Gerenciar Empresas
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Provisione empresas, conecte o WhatsApp e convide os masters.
+        </p>
+      </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {/* ===== Formulários (empilham no mobile) ===== */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -297,11 +347,13 @@ export default function Empresas() {
                     <SelectValue placeholder="Selecione a empresa" />
                   </SelectTrigger>
                   <SelectContent>
-                    {empresas.map((emp) => (
-                      <SelectItem key={emp.id} value={emp.id}>
-                        {emp.name}
-                      </SelectItem>
-                    ))}
+                    {empresas
+                      .filter((e) => e.status !== false)
+                      .map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -341,7 +393,46 @@ export default function Empresas() {
         </Card>
       </div>
 
-      <Card>
+      {/* ===== MUNDO MOBILE: um card por empresa ===== */}
+      <div className="space-y-3 md:hidden">
+        {empresas.map((emp) => (
+          <Card key={emp.id}>
+            <CardContent className="space-y-3 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate font-medium">{emp.name}</span>
+                <Badge variant={emp.status ? "default" : "secondary"}>
+                  {emp.status ? "Ativa" : "Desativada"}
+                </Badge>
+              </div>
+
+              <div className="font-mono text-xs text-muted-foreground">
+                {emp.instance_name ?? "sem instância"}
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="capitalize"
+                  disabled={emp.status === false}
+                  onClick={() => handleConnectWhats(emp)}
+                >
+                  {emp.whatsapp_status ?? "—"}
+                </Button>
+                {renderAcoes(emp)}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {empresas.length === 0 && (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Nenhuma empresa encontrada.
+          </p>
+        )}
+      </div>
+
+      {/* ===== MUNDO DESKTOP: tabela completa ===== */}
+      <Card className="hidden md:block">
         <CardHeader>
           <CardTitle>Empresas</CardTitle>
         </CardHeader>
@@ -351,87 +442,39 @@ export default function Empresas() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    Instância
-                  </TableHead>
+                  <TableHead>Instância</TableHead>
                   <TableHead>WhatsApp</TableHead>
-                  <TableHead className="hidden sm:table-cell">Status</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {empresas.map((emp) => {
-                  return (
-                    <TableRow key={emp.id}>
-                      <TableCell className="font-medium">{emp.name}</TableCell>
-                      <TableCell className="hidden font-mono text-xs md:table-cell">
-                        {emp.instance_name ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          className="text-muted-foreground capitalize"
-                          disabled={emp.status === false}
-                          onClick={() => handleConnectWhats(emp)}
-                        >
-                          {emp.whatsapp_status ?? "--"}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge variant={emp.status ? "default" : "secondary"}>
-                          {emp.status ? "Ativa" : "Desativada"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {emp.status !== false ? (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setEmpresaToDelete(emp)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                                <span className="sr-only">
-                                  Desativar empresa
-                                </span>
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Desativar {emp.name}?
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  A empresa para de responder no WhatsApp e sai
-                                  do seletor de convites. Os dados permanecem no
-                                  banco para auditoria (soft delete).
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={handleDisableEmpresa}
-                                  disabled={isDeleting}
-                                >
-                                  {isDeleting ? "Desativando..." : "Desativar"}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleReenableEmpresa(emp)}
-                          >
-                            <RotateCcw className="mr-1 h-4 w-4" /> Reativar
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
+                {empresas.map((emp) => (
+                  <TableRow key={emp.id}>
+                    <TableCell className="font-medium">{emp.name}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {emp.instance_name ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        className="text-muted-foreground capitalize"
+                        disabled={emp.status === false}
+                        onClick={() => handleConnectWhats(emp)}
+                      >
+                        {emp.whatsapp_status ?? "—"}
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={emp.status ? "default" : "secondary"}>
+                        {emp.status ? "Ativa" : "Desativada"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {renderAcoes(emp)}
+                    </TableCell>
+                  </TableRow>
+                ))}
                 {empresas.length === 0 && (
                   <TableRow>
                     <TableCell
@@ -448,14 +491,13 @@ export default function Empresas() {
         </CardContent>
       </Card>
 
-      {/* Dialog do QR Code */}
+      {/* ===== Dialog do QR ===== */}
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Empresa criada! Escaneie o QR Code</DialogTitle>
+            <DialogTitle>Conectar WhatsApp — {instanceName}</DialogTitle>
             <DialogDescription>
-              Instância <span className="font-mono">{instanceName}</span>.
-              Escaneie com o WhatsApp da empresa.
+              Escaneie com o WhatsApp da empresa para vincular a instância.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center p-4">
@@ -463,7 +505,7 @@ export default function Empresas() {
               <img
                 src={qrSrc}
                 alt="QR Code da instância"
-                className="h-56 w-56 rounded-lg border sm:h-64 sm:w-64"
+                className="h-52 w-52 rounded-lg border sm:h-64 sm:w-64"
               />
             ) : (
               <p className="text-sm text-muted-foreground">
@@ -483,7 +525,7 @@ export default function Empresas() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog do link do master */}
+      {/* ===== Dialog do link do master ===== */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
