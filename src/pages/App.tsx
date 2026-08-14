@@ -22,6 +22,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Toaster, toast } from "sonner"
 import Empresas from "./admin/Empresas"
 import UsuariosPage from "./admin/Usuarios"
+import WhatsappBot from "./admin/Whatsapp"
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -160,10 +161,7 @@ function App() {
             <Route path="faq" element={<div>FAQ</div>} />
 
             <Route path="admin/usuarios" element={<UsuariosPage />} />
-            <Route
-              path="admin/whatsapp"
-              element={<div>Gerenciar Bot Whatsapp</div>}
-            />
+            <Route path="admin/whatsapp" element={<WhatsappBot />} />
             <Route
               path="admin/empresa"
               element={<div>Gerenciar Dados Empresa</div>}
