@@ -159,16 +159,18 @@ export function AppSidebar({ userProfile, ...props }: AppSidebarProps) {
         </button>
       </div>
 
-      {/* A CAUSA DO ESPAÇO: Reduzido de pt-6 para pt-2 */}
       <SidebarContent className="pt-2 group-data-[state=collapsed]:items-center group-data-[state=collapsed]:px-0">
         <NavMain items={data.navMain} />
-        {activeUser.role === "master" ||
-          (activeUser.role === "super_admin" && (
-            <NavProjects projects={data.adminMenu} />
-          ))}
+
+        {(activeUser.role === "master" ||
+          activeUser.role === "super_admin") && (
+          <NavProjects projects={data.adminMenu} />
+        )}
+
         {activeUser.role === "super_admin" && (
           <NavProjects projects={data.superAdmin} />
         )}
+
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
 
