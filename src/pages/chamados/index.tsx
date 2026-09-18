@@ -111,24 +111,36 @@ export default function Chamados() {
     } = await supabase.auth.getUser()
     if (!user) return console.error("Usuário não autenticado")
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("chamados")
       .update({ agente_responsavel_id: user.id, status: "em_andamento" })
       .eq("id", id)
+      .select("id")
 
     if (error) {
       toast.error("Houve um erro ao assumir o chamado")
       console.error(error)
-    } else {
-      toast.success("Chamado atribuido a você", {
-        action: (
-          <Button onClick={() => navigate("/chamados/meus")}>
-            Meus chamados
-          </Button>
-        ),
-      })
-      fetchChamados()
+      return
     }
+
+    const linhasAfetadas = data?.length ?? 0
+
+    if (linhasAfetadas === 0) {
+      toast.error(
+        "Não foi possível assumir o chamado. Ele pode já ter sido atribuído a outro agente."
+      )
+      fetchChamados()
+      return
+    }
+
+    toast.success("Chamado atribuido a você", {
+      action: (
+        <Button onClick={() => navigate("/chamados/meus")}>
+          Meus chamados
+        </Button>
+      ),
+    })
+    fetchChamados()
   }
 
   const renderPageNumbers = () => {
