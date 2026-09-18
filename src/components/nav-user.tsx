@@ -162,7 +162,7 @@ export function NavUser({
             <AlertDialogTitle>Deseja realmente sair?</AlertDialogTitle>
             <AlertDialogDescription>
               Você precisará inserir suas credenciais novamente para acessar o
-              painel do ChamadosAdmin.
+              painel.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

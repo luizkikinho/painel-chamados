@@ -24,16 +24,11 @@ import {
 } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
+import type { UserProfile } from "@/lib/user-context"
 import { toast } from "sonner"
 
-type UserProfile = {
-  name: string
-  email: string
-  cargo: string
-} | null
-
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  userProfile: UserProfile
+  userProfile: UserProfile | null
 }
 
 const data = {
@@ -79,6 +74,11 @@ const data = {
     {
       name: "WhatsApp Bot",
       url: "/admin/whatsapp",
+      icon: <MessageSquareIcon />,
+    },
+    {
+      name: "Simulador WhatsApp",
+      url: "/admin/whatsapp/simulador",
       icon: <MessageSquareIcon />,
     },
     {

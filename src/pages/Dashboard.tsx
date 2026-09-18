@@ -1,18 +1,13 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
+import type { UserProfile } from "@/lib/user-context"
 import { Outlet } from "react-router"
-
-type UserProfile = {
-  name: string
-  email: string
-  cargo: string
-} | null
 
 export default function Dashboard({
   userProfile,
 }: {
-  userProfile: UserProfile
+  userProfile: UserProfile | null
 }) {
   return (
     <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-sidebar">

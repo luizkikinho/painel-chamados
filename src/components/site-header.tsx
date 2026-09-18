@@ -22,15 +22,10 @@ import {
 } from "@/components/ui/drawer"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
-
-type UserProfile = {
-  name: string
-  email: string
-  cargo: string
-} | null
+import type { UserProfile } from "@/lib/user-context"
 
 interface SiteHeaderProps {
-  userProfile?: UserProfile
+  userProfile?: UserProfile | null
 }
 
 export function SiteHeader({ userProfile }: SiteHeaderProps) {
@@ -66,7 +61,7 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
   const isAdmin = userProfile?.cargo === "master"
 
   const empresaLogo = null
-  const empresaNome = "ChamadosAdmin"
+  const empresaNome = userProfile?.empresaNome || "ChamadosAdmin"
 
   const getInitials = (name?: string) => {
     if (!name) return "US"
@@ -206,6 +201,14 @@ export function SiteHeader({ userProfile }: SiteHeaderProps) {
                     >
                       <MessageSquareIcon className="mr-2 h-4 w-4" /> WhatsApp
                       Bot
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
+                      onClick={() => handleNav("/admin/whatsapp/simulador")}
+                    >
+                      <MessageSquareIcon className="mr-2 h-4 w-4" /> Simulador
+                      WhatsApp
                     </Button>
                     <Button
                       variant="ghost"

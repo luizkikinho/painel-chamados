@@ -21,8 +21,10 @@ import { RequireSuperAdmin } from "@/components/RequireSuperAdmin"
 import { Spinner } from "@/components/ui/spinner"
 import { Toaster, toast } from "sonner"
 import Empresas from "./admin/Empresas"
+import EmpresaConfig from "./admin/EmpresaConfig"
 import UsuariosPage from "./admin/Usuarios"
 import WhatsappBot from "./admin/Whatsapp"
+import SimuladorWhatsapp from "./admin/SimuladorWhatsapp"
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -37,7 +39,7 @@ function App() {
       try {
         const { data, error } = await supabase
           .from("administradores")
-          .select("nome, cargo")
+          .select("nome, cargo, empresas(name)")
           .eq("id", user.id)
           .single()
 
@@ -51,10 +53,22 @@ function App() {
           return
         }
 
+        const empresaJoin = data.empresas as
+          | { name?: string }
+          | { name?: string }[]
+          | null
+        const empresaNome =
+          empresaJoin && !Array.isArray(empresaJoin)
+            ? empresaJoin.name
+            : Array.isArray(empresaJoin)
+              ? (empresaJoin[0]?.name ?? undefined)
+              : undefined
+
         setUserProfile({
           name: data.nome,
           email: user.email || "",
           cargo: data.cargo,
+          empresaNome,
         })
       } catch (err) {
         console.error("Exceção fatal ao carregar perfil:", err)
@@ -162,10 +176,8 @@ function App() {
 
             <Route path="admin/usuarios" element={<UsuariosPage />} />
             <Route path="admin/whatsapp" element={<WhatsappBot />} />
-            <Route
-              path="admin/empresa"
-              element={<div>Gerenciar Dados Empresa</div>}
-            />
+            <Route path="admin/whatsapp/simulador" element={<SimuladorWhatsapp />} />
+            <Route path="admin/empresa" element={<EmpresaConfig />} />
 
             <Route
               path="admin/empresas"

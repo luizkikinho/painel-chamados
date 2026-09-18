@@ -4,6 +4,8 @@ export interface UserProfile {
   name: string
   email: string
   cargo: string
+  empresaId?: string
+  empresaNome?: string
 }
 
 interface UserContextType {
