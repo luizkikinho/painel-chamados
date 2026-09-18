@@ -7,6 +7,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 }
 
+// Mock mode: sem Evolution/Koyeb, a empresa nasce "conectada" em uma
+// instância fake. Ativa definindo MOCK_MODE=true (ou deixando sem KOYEB_BACKEND_URL).
+const MOCK_MODE =
+  Deno.env.get("MOCK_MODE") === "true" || !Deno.env.get("KOYEB_BACKEND_URL")
+
 serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response("ok", { headers: corsHeaders })
@@ -48,7 +53,29 @@ serve(async (req) => {
       .single()
     if (empError) throw empError
 
-    // 4. Provisiona no Koyeb (segredo server-side)
+    // 4. Provisiona no Koyeb (segredo server-side) — ou simula no mock
+    if (MOCK_MODE) {
+      const instanceName = `mock-${empresa.id.slice(0, 8)}`
+      const { error: errMock } = await supabaseAdmin
+        .from("empresas")
+        .update({ instance_name: instanceName, whatsapp_status: "connected" })
+        .eq("id", empresa.id)
+      if (errMock) throw errMock
+
+      return new Response(
+        JSON.stringify({
+          empresaId: empresa.id,
+          instanceName,
+          qrBase64: null,
+          mock: true,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      )
+    }
+
     const resp = await fetch(
       `${Deno.env.get("KOYEB_BACKEND_URL")}/provisionar/${empresa.id}`,
       {

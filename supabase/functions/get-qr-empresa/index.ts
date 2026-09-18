@@ -7,6 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 }
 
+// Mock mode: sem Evolution/Koyeb, "conectar" já conecta na hora.
+const MOCK_MODE =
+  Deno.env.get("MOCK_MODE") === "true" || !Deno.env.get("KOYEB_BACKEND_URL")
+
 serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response("ok", { headers: corsHeaders })
@@ -45,6 +49,18 @@ serve(async (req) => {
       adminData?.cargo === "master" && adminData?.empresa_id === empresaId
     if (!ehSuperAdmin && !ehMasterDaEmpresa) {
       throw new Error("Sem permissão para conectar esta empresa.")
+    }
+
+    // 3. Mock: conecta instante, sem Evolution/Koyeb
+    if (MOCK_MODE) {
+      await supabaseAdmin
+        .from("empresas")
+        .update({ whatsapp_status: "connected" })
+        .eq("id", empresaId)
+      return new Response(JSON.stringify({ qrBase64: null, mock: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      })
     }
 
     // 3. QR vem do Koyeb — a chave da Evolution nunca toca o navegador
