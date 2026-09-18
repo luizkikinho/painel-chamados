@@ -4,7 +4,6 @@ import { toast } from "sonner"
 import { QrCode, Loader2, Pencil, Check, X, Power, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -28,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import MensagensBot from "@/pages/admin/MensagensBot"
 
 export default function WhatsappBot() {
   // ===== identidade =====
@@ -378,6 +378,9 @@ export default function WhatsappBot() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ===== Mensagens do Bot (voz do assistente) ===== */}
+      <MensagensBot empresaId={empresaId} />
 
       {/* ===== Dialog QR ===== */}
       <Dialog
